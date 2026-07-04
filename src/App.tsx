@@ -54,6 +54,17 @@ const paymentMethods = [
 ];
 const defaultServices = ['剪髮 (Cut)', '洗吹 (Wash & Blow)', '電髮 (Perm)', '全頭染髮 (Color)', '髮根補染 (Root Touch)', '漂髮 (Bleach)', '挑染 (Highlights)', '角蛋白護理 (Keratin)', '頭皮理療 (Treatment)'];
 
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('sv-SE');
+    return String(dateStr).split(' ')[0]; // 備用方案
+  } catch (e) {
+    return String(dateStr);
+  }
+};
+
 // Audio Feedback System
 let audioCtx = null;
 const playAudioFeedback = (type) => {
@@ -672,9 +683,17 @@ export default function App() {
         // 過濾掉明顯無效的空行資料 (解決白畫面問題的核心防護)
         const validData = data.filter(r => r && r.serviceId);
         
+        // 智能去除重複資料 (自動過濾 Google Sheet 中重複的 S- 單號)
+        const uniqueDataMap = new Map();
+        validData.forEach(item => {
+           // 相同 serviceId 的資料，後面的會覆蓋前面的（保留最新的修改）
+           uniqueDataMap.set(item.serviceId, item);
+        });
+        const uniqueData = Array.from(uniqueDataMap.values());
+        
         // 安全排序
-        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setHistoryRecords(validData);
+        uniqueData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setHistoryRecords(uniqueData);
         playAudioFeedback('success');
         triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
       } else {
@@ -1212,7 +1231,7 @@ export default function App() {
                                               <div>
                                                 <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
                                                   <div className="flex items-center gap-2">
-                                                     <span>{v.date}</span>
+                                                     <span>{formatShortDate(v.date)}</span>
                                                      <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{v.serviceId}</span>
                                                   </div>
                                                   <span className="text-[#8B5A2B]">${v.price}</span>
@@ -1316,7 +1335,7 @@ export default function App() {
                                   <div>
                                     <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
                                       <div className="flex items-center gap-2">
-                                         <span>{v.date}</span>
+                                         <span>{formatShortDate(v.date)}</span>
                                          <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{v.serviceId}</span>
                                       </div>
                                       <span style={{ color: clientTheme.hex }}>${v.price}</span>
@@ -1484,7 +1503,7 @@ export default function App() {
                    <tbody className="divide-y divide-[#E8DCC8]">
                      {dashboardData.filteredRecords.sort((a,b) => String(b.date || '').localeCompare(String(a.date || ''))).map((r, i) => (
                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                         <td className="p-4 font-bold text-gray-600">{r.date}</td>
+                         <td className="p-4 font-bold text-gray-600">{formatShortDate(r.date)}</td>
                          <td className="p-4 font-mono text-gray-400">{r.serviceId}</td>
                          <td className="p-4 font-black text-[#4A2511]">{r.firstName || r.name}</td>
                          <td className="p-4">
@@ -1664,7 +1683,7 @@ export default function App() {
           <div className="bg-white rounded-[2rem] max-w-md w-full p-8 text-center shadow-2xl animate-in zoom-in-95">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icons.Trash /></div>
             <h3 className="text-3xl font-black mb-2 text-[#4A2511]">確認刪除紀錄？</h3>
-            <p className="text-lg text-gray-500 font-bold mb-8">將永久刪除 {deleteConfirm.fullName} 於 {deleteConfirm.date} 的服務紀錄，此操作無法復原。</p>
+            <p className="text-lg text-gray-500 font-bold mb-8">將永久刪除 {deleteConfirm.fullName} 於 {formatShortDate(deleteConfirm.date)} 的服務紀錄，此操作無法復原。</p>
             <div className="flex space-x-4">
                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">取消</button>
                <button onClick={() => {
@@ -1687,7 +1706,7 @@ export default function App() {
             triggerNotification(`已更新服務紀錄！`);
             setEditModal(null);
           }} className="bg-white rounded-[2rem] max-w-2xl w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-            <h3 className="text-3xl font-black mb-6 text-[#4A2511] flex items-center space-x-3"><Icons.Edit /> <span>編輯紀錄 ({editModal.date})</span></h3>
+            <h3 className="text-3xl font-black mb-6 text-[#4A2511] flex items-center space-x-3"><Icons.Edit /> <span>編輯紀錄 ({formatShortDate(editModal.date)})</span></h3>
             <div className="overflow-y-auto custom-scrollbar pr-2 space-y-5 mb-6">
               <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">消費總結金額</label><input type="number" value={editModal.price} onChange={e => setEditModal({...editModal, price: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-2xl font-black outline-none focus:border-[#8B5A2B] border" /></div>
               
