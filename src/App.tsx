@@ -31,7 +31,8 @@ const Icons = {
   Photo: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Link: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>,
   Cloud: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>,
-  Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+  Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
+  Refresh: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
 };
 
 // --- Themes & Constants ---
@@ -192,6 +193,7 @@ export default function App() {
   });
 
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
+  const [revenueMonths, setRevenueMonths] = useState(6);
   const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
 
   useEffect(() => {
@@ -212,7 +214,6 @@ export default function App() {
     setActiveTab(tab);
   };
 
-  // Re-calculate price automatically whenever amounts or discount changes
   useEffect(() => {
     const sTotal = parseInt(formData.subtotal) || 0;
     const rTotal = parseInt(formData.retailPrice) || 0;
@@ -235,7 +236,7 @@ export default function App() {
 
   const hasChemicalService = useMemo(() => {
     const allServices = [...formData.selectedServices, formData.customService];
-    return allServices.some(s => chemicalKeywords.some(k => s.toLowerCase().includes(k.toLowerCase())));
+    return allServices.some(s => chemicalKeywords.some(k => String(s || '').toLowerCase().includes(k.toLowerCase())));
   }, [formData.selectedServices, formData.customService]);
 
   const getFullName = (record) => {
@@ -250,7 +251,7 @@ export default function App() {
     const profiles = {};
     historyRecords.forEach(record => {
       const rawName = getFullName(record);
-      const key = record.customerId ? record.customerId.toUpperCase() : rawName.toLowerCase(); 
+      const key = record.customerId ? String(record.customerId).toUpperCase() : rawName.toLowerCase(); 
       
       if (!profiles[key]) {
         profiles[key] = {
@@ -279,8 +280,20 @@ export default function App() {
           p.visits.push(record);
       }
       
-      if (record.date > p.latestVisitDate && !record.isProfileOnly) {
-        p.latestVisitDate = record.date;
+      if (record.date && record.date > p.latestVisitDate && !record.isProfileOnly) {
+        // Fix: Format date to YYYY-MM-DD to avoid long timezone strings
+        try {
+           const d = new Date(record.date);
+           if (!isNaN(d.getTime())) {
+               // Use Sweden locale which naturally outputs YYYY-MM-DD
+               p.latestVisitDate = d.toLocaleDateString('sv-SE');
+           } else {
+               p.latestVisitDate = record.date; // Fallback if it's already a string like "2021-10-05" but failed parsing
+           }
+        } catch(e) {
+           p.latestVisitDate = record.date;
+        }
+        
         p.preferredStylist = record.stylist;
         if (record.formula) p.latestFormula = record.formula;
       }
@@ -291,7 +304,7 @@ export default function App() {
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
       if (p.visitCount === 1) tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
       
-      const lastVisit = new Date(p.latestVisitDate);
+      const lastVisit = new Date(p.latestVisitDate === '1970-01-01' ? Date.now() : p.latestVisitDate);
       const daysSince = Math.floor((new Date() - lastVisit) / (1000 * 60 * 60 * 24));
       
       if (daysSince > 90 && p.visitCount > 0) {
@@ -300,15 +313,15 @@ export default function App() {
         tags.push({ label: '需補染', color: 'bg-orange-100 text-orange-900 border-orange-300' });
       }
       
-      p.visits.sort((a,b) => b.date.localeCompare(a.date));
+      p.visits.sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')));
       return { ...p, tags, daysSince };
     });
 
-    if (crmSortBy === 'latestVisit') result.sort((a, b) => b.latestVisitDate.localeCompare(a.latestVisitDate));
+    if (crmSortBy === 'latestVisit') result.sort((a, b) => String(b.latestVisitDate || '').localeCompare(String(a.latestVisitDate || '')));
     if (crmSortBy === 'totalSpent') result.sort((a, b) => b.totalSpent - a.totalSpent);
     if (crmSortBy === 'visitCount') result.sort((a, b) => b.visitCount - a.visitCount);
-    if (crmSortBy === 'name_asc') result.sort((a, b) => a.fullName.localeCompare(b.fullName));
-    if (crmSortBy === 'stylist') result.sort((a, b) => a.preferredStylist.localeCompare(b.preferredStylist));
+    if (crmSortBy === 'name_asc') result.sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || '')));
+    if (crmSortBy === 'stylist') result.sort((a, b) => String(a.preferredStylist || '').localeCompare(String(b.preferredStylist || '')));
 
     return result;
   }, [historyRecords, crmSortBy]);
@@ -318,7 +331,7 @@ export default function App() {
     setFormData(prev => ({ ...prev, firstName: val }));
     
     if (val.trim().length > 0) {
-      const matches = crmProfiles.filter(p => p.fullName.toLowerCase().includes(val.toLowerCase()) || (p.phone && p.phone.includes(val)));
+      const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && p.phone.includes(val)));
       setNameSuggests(matches);
       setShowNameSuggest(matches.length > 0);
     } else {
@@ -329,9 +342,7 @@ export default function App() {
 
   const handleSelectSuggest = (profile) => {
     playAudioFeedback('click');
-    
-    // Split full name back into first/last heuristically if needed, or just put in firstName
-    const parts = profile.fullName.split(' ');
+    const parts = (profile.fullName || '').split(' ');
     const fName = parts[0];
     const lName = parts.length > 1 ? parts.slice(1).join(' ') : '';
 
@@ -377,8 +388,23 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      // 1. 先存入本機
       setHistoryRecords(prev => [finalRecord, ...prev]);
+      
+      // 2. 背景即時同步到 Google Sheet
+      if (driveApiUrl) {
+        try {
+          fetch(driveApiUrl, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'append', record: finalRecord }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+          });
+        } catch(err) {
+          console.error("雲端寫入失敗", err);
+        }
+      }
+
       setSubmitting(false);
       playAudioFeedback('success');
       setShowSuccessModal(true);
@@ -633,8 +659,36 @@ export default function App() {
   };
 
   // --- Cloud Sync Actions ---
+  const handleCloudRefresh = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
+    
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    
+    try {
+      const res = await fetch(driveApiUrl);
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        // 過濾掉明顯無效的空行資料 (解決白畫面問題的核心防護)
+        const validData = data.filter(r => r && r.serviceId);
+        
+        // 安全排序
+        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setHistoryRecords(validData);
+        playAudioFeedback('success');
+        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
+      } else {
+        throw new Error('Format issue');
+      }
+    } catch(e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
+    }
+    setIsSyncing(false);
+  };
+
   const handleCloudBackup = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Drive API 網址！');
+    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
     if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
     
     playAudioFeedback('click');
@@ -642,15 +696,16 @@ export default function App() {
     triggerNotification('⏳ 雲端同步備份中，請稍候...');
     
     try {
+      // 進行全覆蓋更新
       const res = await fetch(driveApiUrl, {
         method: 'POST',
-        body: JSON.stringify({ data: historyRecords }),
+        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
       });
       const result = await res.json();
       if (result.status === 'success') {
         playAudioFeedback('success');
-        triggerNotification('☁️✅ 成功！全站資料已安全備份至 Google Drive！');
+        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
       } else {
          throw new Error(result.message);
       }
@@ -662,27 +717,7 @@ export default function App() {
   };
 
   const handleCloudRestore = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Drive API 網址！');
-    
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    triggerNotification('⏳ 正在從雲端抓取最新備份...');
-    
-    try {
-      const res = await fetch(driveApiUrl);
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        setHistoryRecords(data);
-        playAudioFeedback('success');
-        triggerNotification(`☁️✅ 成功還原 ${data.length} 筆資料自 Google Drive！`);
-      } else {
-        throw new Error('Format issue');
-      }
-    } catch(e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 還原失敗，雲端可能尚未有備份檔案或網址錯誤。');
-    }
-    setIsSyncing(false);
+     handleCloudRefresh(); // 邏輯與 Refresh 相同，直接呼叫
   };
 
   // Dashboard Data Analytics
@@ -690,7 +725,7 @@ export default function App() {
     const now = new Date();
     const filtered = historyRecords.filter(record => {
       if (record.isProfileOnly) return false;
-      const rDate = new Date(record.date);
+      const rDate = new Date(record.date || Date.now());
       if (dashboardPeriod === 'day') return rDate.toDateString() === now.toDateString();
       if (dashboardPeriod === 'week') { const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); return rDate >= weekAgo; }
       if (dashboardPeriod === 'month') return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
@@ -720,7 +755,7 @@ export default function App() {
       if (profile && profile.visitCount > 1) returningCount++;
 
       stylistMap[r.stylist] = (stylistMap[r.stylist] || 0) + (parseInt(r.price) || 0); 
-      const svcs = r.services ? r.services.split(', ') : [];
+      const svcs = (r.services || '').split(', ');
       svcs.forEach(s => {
         const shortName = s.trim();
         if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案') serviceMap[shortName] = (serviceMap[shortName] || 0) + 1;
@@ -732,14 +767,14 @@ export default function App() {
     const serviceChart = Object.keys(serviceMap).map(k => ({ name: k, count: serviceMap[k] })).sort((a,b)=>b.count-a.count).slice(0,5);
 
     const monthlyRev = {};
-    for (let i = 5; i >= 0; i--) {
+    for (let i = revenueMonths - 1; i >= 0; i--) {
        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-       const mLabel = `${d.getMonth()+1}月`;
+       const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
        monthlyRev[mLabel] = 0;
     }
     historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
-       const d = new Date(r.date);
-       const mLabel = `${d.getMonth()+1}月`;
+       const d = new Date(r.date || Date.now());
+       const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
        if (monthlyRev[mLabel] !== undefined) {
           monthlyRev[mLabel] += (parseInt(r.price) || 0);
        }
@@ -758,7 +793,7 @@ export default function App() {
       newPct: totalClients > 0 ? (100 - ((returningCount / totalClients) * 100)).toFixed(0) : 0,
       retailPct: totalRev > 0 ? ((retailRev / totalRev) * 100).toFixed(1) : 0
     };
-  }, [historyRecords, dashboardPeriod, crmProfiles]);
+  }, [historyRecords, dashboardPeriod, revenueMonths, crmProfiles]);
 
   return (
     <div className="h-screen flex flex-col font-sans selection:bg-[#E8DCC8] selection:text-[#4A2511] overflow-hidden bg-[#F6EFE9] text-[#4A2511]">
@@ -795,6 +830,12 @@ export default function App() {
         </div>
         <div className="flex items-center space-x-3">
           <span className="text-sm font-bold text-gray-400 mr-2">v11.4.0 Pro</span>
+          
+          <button onClick={handleCloudRefresh} disabled={isSyncing} 
+                  className={`p-2.5 rounded-xl text-white transition-all shadow-sm flex items-center gap-1 ${isSyncing ? 'animate-spin opacity-50' : 'hover:opacity-80'}`} 
+                  style={{ backgroundColor: activeTheme.hex }} title="重新整理雲端最新資料">
+             <Icons.Refresh />
+          </button>
         </div>
       </header>
 
@@ -990,9 +1031,10 @@ export default function App() {
                      <div className="flex space-x-2 h-[52px]">
                        {paymentMethods.map(method => (
                          <button key={method.id} type="button" onClick={() => { playAudioFeedback('click'); handleInputChange('paymentMethod', method.id); }}
-                           className={`flex-1 rounded-2xl border-2 transition-all flex items-center justify-center ${formData.paymentMethod === method.id ? 'bg-white shadow-sm' : 'bg-transparent border-transparent hover:bg-white/40'}`}
+                           className={`flex-1 rounded-2xl border-2 transition-all flex items-center justify-center space-x-2 ${formData.paymentMethod === method.id ? 'bg-white shadow-sm' : 'bg-transparent border-transparent hover:bg-white/40'}`}
                            style={formData.paymentMethod === method.id ? { borderColor: activeTheme.hex, color: activeTheme.hex } : { color: activeTheme.hex, opacity: 0.7 }}>
                            <method.icon />
+                           <span className="font-bold text-sm">{method.label}</span>
                          </button>
                        ))}
                      </div>
@@ -1108,7 +1150,11 @@ export default function App() {
                 const displayedProfiles = crmProfiles.filter(p => {
                   if (!crmSearchQuery) return true;
                   const q = crmSearchQuery.toLowerCase();
-                  return p.fullName.toLowerCase().includes(q) || p.phone.toLowerCase().includes(q) || p.latestFormula.toLowerCase().includes(q) || p.preferences.toLowerCase().includes(q) || p.customerId.toLowerCase().includes(q);
+                  return String(p.fullName || '').toLowerCase().includes(q) || 
+                         String(p.phone || '').toLowerCase().includes(q) || 
+                         String(p.latestFormula || '').toLowerCase().includes(q) || 
+                         String(p.preferences || '').toLowerCase().includes(q) || 
+                         String(p.customerId || '').toLowerCase().includes(q);
                 });
 
                 if (crmProfiles.length === 0) return <div className="py-32 text-center text-2xl font-bold text-gray-300">尚無客戶資料，請從結帳或資料中心匯入建立。</div>;
@@ -1146,7 +1192,9 @@ export default function App() {
                                     <div className="font-black text-[#4A2511] text-xl">${client.totalSpent}</div>
                                     <div className="text-sm font-bold text-gray-400">{client.visitCount} 次</div>
                                  </td>
-                                 <td className="p-4 text-base font-bold text-gray-600">{client.latestVisitDate}</td>
+                                 <td className="p-4 text-base font-bold text-gray-600">
+                                   {client.latestVisitDate === '1970-01-01' ? '無紀錄' : <>{client.latestVisitDate} <span className="text-xs text-gray-400 ml-1">({client.daysSince} 天前)</span></>}
+                                 </td>
                                  <td className="p-4 flex items-center space-x-2">
                                     <button onClick={() => { playAudioFeedback('click'); setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]})); }} 
                                             className="px-4 py-2 bg-[#F6EFE9] text-[#8B5A2B] font-bold text-base rounded-xl hover:bg-[#E8DCC8] transition-colors">
@@ -1222,11 +1270,11 @@ export default function App() {
                               </div>
                               
                               {/* Stylist Badge & Info */}
-                              <div className="flex items-center gap-3 mb-3">
-                                 <span className="text-sm font-bold text-white px-2 py-1 rounded shadow-sm" style={{ backgroundColor: clientTheme.hex }}>✂️ {client.preferredStylist}</span>
-                                 <div className="text-sm font-bold text-gray-500 flex items-center space-x-2">
-                                    <span className={client.gender === 'Male' ? 'text-blue-600' : 'text-pink-600'}>{client.gender === 'Male' ? '♂ 男' : '♀ 女'}</span>
-                                    {client.birthMonth && <span>🎂 {client.birthMonth}</span>}
+                              <div className="flex items-center gap-4 mb-4">
+                                 <span className="text-xl font-black text-white px-3 py-1 rounded shadow-sm" style={{ backgroundColor: clientTheme.hex }}>{client.preferredStylist}</span>
+                                 <div className="text-xl font-black text-gray-500 flex items-center space-x-2">
+                                    <span className={client.gender === 'Male' ? 'text-blue-600' : 'text-pink-600'}>{client.gender === 'Male' ? '男' : '女'}</span>
+                                    {client.birthMonth && <span className="text-base">🎂 {client.birthMonth}</span>}
                                  </div>
                               </div>
                               
@@ -1248,7 +1296,9 @@ export default function App() {
                             <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent}</span></div>
                             <div>
                                <span className="text-sm text-gray-500 uppercase font-bold block mb-1">最近造訪</span>
-                               <span className="font-black text-[#4A2511] text-lg">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : client.latestVisitDate}</span>
+                               <span className="font-black text-[#4A2511] text-base">
+                                 {client.latestVisitDate === '1970-01-01' ? '無紀錄' : <>{client.latestVisitDate} <span className="text-xs font-bold text-gray-400 ml-1">({client.daysSince} 天前)</span></>}
+                               </span>
                             </div>
                           </div>
                         </div>
@@ -1360,7 +1410,14 @@ export default function App() {
 
             {/* CHARTS */}
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col h-[400px]">
-                <h3 className="text-2xl font-black mb-8 text-[#4A2511]">近半年營收趨勢 (Monthly Revenue)</h3>
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black text-[#4A2511]">營收趨勢 (Monthly Revenue)</h3>
+                  <select value={revenueMonths} onChange={(e) => setRevenueMonths(Number(e.target.value))} className="bg-[#F6EFE9] border border-[#E8DCC8] rounded-xl px-4 py-2 font-bold text-[#4A2511] outline-none cursor-pointer">
+                    <option value={3}>近 3 個月</option>
+                    <option value={6}>近 6 個月</option>
+                    <option value={12}>近 1 年</option>
+                  </select>
+                </div>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dashboardData.monthlyChart} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8DCC8" />
@@ -1374,15 +1431,20 @@ export default function App() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈</h3>
+                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈 (受上方期間連動)</h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={dashboardData.stylistChart} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={100} outerRadius={150} label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelStyle={{ fontSize: '18px', fontWeight: 'bold', fill: '#4A2511' }}>
-                        {dashboardData.stylistChart.map((entry, index) => <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || CHART_COLORS[index % CHART_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(value) => `$${value}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} />
-                    </PieChart>
+                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 15, fontWeight: 'bold' }} width={80}/>
+                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={40}>
+                        {dashboardData.stylistChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
               </div>
@@ -1420,7 +1482,7 @@ export default function App() {
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-[#E8DCC8]">
-                     {dashboardData.filteredRecords.sort((a,b) => b.date.localeCompare(a.date)).map((r, i) => (
+                     {dashboardData.filteredRecords.sort((a,b) => String(b.date || '').localeCompare(String(a.date || ''))).map((r, i) => (
                        <tr key={i} className="hover:bg-gray-50 transition-colors">
                          <td className="p-4 font-bold text-gray-600">{r.date}</td>
                          <td className="p-4 font-mono text-gray-400">{r.serviceId}</td>
@@ -1628,7 +1690,36 @@ export default function App() {
             <h3 className="text-3xl font-black mb-6 text-[#4A2511] flex items-center space-x-3"><Icons.Edit /> <span>編輯紀錄 ({editModal.date})</span></h3>
             <div className="overflow-y-auto custom-scrollbar pr-2 space-y-5 mb-6">
               <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">消費總結金額</label><input type="number" value={editModal.price} onChange={e => setEditModal({...editModal, price: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-2xl font-black outline-none focus:border-[#8B5A2B] border" /></div>
-              <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">服務項目</label><input type="text" value={editModal.services} onChange={e => setEditModal({...editModal, services: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-xl font-bold outline-none focus:border-[#8B5A2B] border" /></div>
+              
+              <div>
+                <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">服務項目 (點擊快速選擇)</label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {hairServices.map(service => {
+                    const isSelected = (editModal.services || '').includes(service);
+                    return (
+                      <button
+                        key={service}
+                        type="button"
+                        onClick={() => {
+                          let sArr = (editModal.services || '').split(', ').filter(Boolean);
+                          if (isSelected) {
+                            sArr = sArr.filter(s => s !== service && s !== '');
+                          } else {
+                            sArr.push(service);
+                          }
+                          setEditModal({...editModal, services: sArr.join(', ')});
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 transition-all ${isSelected ? 'shadow-sm text-white' : 'border-transparent bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                        style={isSelected ? { backgroundColor: '#8B5A2B', borderColor: '#8B5A2B' } : {}}
+                      >
+                        {service}
+                      </button>
+                    )
+                  })}
+                </div>
+                <input type="text" placeholder="+ 手動輸入其他服務..." value={editModal.services || ''} onChange={e => setEditModal({...editModal, services: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-xl font-bold outline-none focus:border-[#8B5A2B] border" />
+              </div>
+
               <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">零售產品</label><input type="text" value={editModal.retailItems || ''} onChange={e => setEditModal({...editModal, retailItems: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-lg font-bold outline-none focus:border-[#8B5A2B] border" /></div>
               <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">照片連結</label><input type="url" value={editModal.photoLink || ''} onChange={e => setEditModal({...editModal, photoLink: e.target.value})} placeholder="貼上照片的網址 (例如 IG 或圖床連結)..." className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-lg font-mono outline-none focus:border-[#8B5A2B] border" /></div>
               <div><label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">化學配方</label><textarea rows={3} value={editModal.formula} onChange={e => setEditModal({...editModal, formula: e.target.value})} className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-3 px-4 text-lg font-mono outline-none focus:border-[#8B5A2B] border" /></div>
