@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from 'recharts';
 
@@ -28,13 +29,11 @@ const Icons = {
   Settings: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
   Cart: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
   AlertTriangle: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-  Photo: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Link: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>,
   Cloud: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>,
-  Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
-  Refresh: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
   Lock: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
-  Search: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+  Refresh: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+  MessageCircle: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
 };
 
 const STYLIST_THEMES = {
@@ -66,12 +65,10 @@ const playAudioFeedback = (type) => {
     
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     
     if (type === 'click') {
-      // Elegant subtle pop
       osc.type = 'sine';
       osc.frequency.setValueAtTime(600, audioCtx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.02);
@@ -80,7 +77,6 @@ const playAudioFeedback = (type) => {
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.04);
     } else if (type === 'cashier') {
-      // Louder cashier register sound
       osc.type = 'square';
       osc.frequency.setValueAtTime(800, audioCtx.currentTime);
       osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
@@ -107,6 +103,14 @@ const playAudioFeedback = (type) => {
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.2);
+    } else if (type === 'success') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.2);
     }
   } catch (e) {
     console.warn('Audio feedback failed');
@@ -117,8 +121,17 @@ const parseDateFlexible = (dateStr) => {
   if (!dateStr) return '';
   try {
     const cleanStr = String(dateStr).trim();
-    const d = new Date(cleanStr);
+    let d = new Date(cleanStr);
     if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
+    
+    // Catch YYYY-DD-MM typo (e.g., 2026-31-01)
+    const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ydmMatch) {
+        if (parseInt(ydmMatch[2]) > 12 && parseInt(ydmMatch[3]) <= 12) {
+           d = new Date(`${ydmMatch[1]}-${ydmMatch[3]}-${ydmMatch[2]}`);
+           if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
+        }
+    }
     
     const zhMatch = cleanStr.match(/(\d{1,2})月(\d{1,2})日(\d{4})/);
     if (zhMatch) {
@@ -131,6 +144,14 @@ const parseDateFlexible = (dateStr) => {
 };
 
 const formatShortDate = parseDateFlexible;
+
+const getWaLink = (phone) => {
+  if (!phone) return '#';
+  const digits = phone.replace(/\D/g, '');
+  // Auto prefix 852 for standard 8-digit Hong Kong numbers
+  if (digits.length === 8) return `https://wa.me/852${digits}`;
+  return `https://wa.me/${digits}`;
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('checkout'); 
@@ -150,7 +171,6 @@ export default function App() {
   // Modals State
   const [deleteConfirm, setDeleteConfirm] = useState(null); 
   const [editModal, setEditModal] = useState(null); 
-  const [profileAddModal, setProfileAddModal] = useState(false);
   const [profileEditData, setProfileEditData] = useState(null);
   const [clientDeleteConfirm, setClientDeleteConfirm] = useState(null);
   const [showServicesConfig, setShowServicesConfig] = useState(false);
@@ -172,7 +192,7 @@ export default function App() {
   
   const generateServiceId = (isRetailOnly = false) => {
     const prefix = isRetailOnly ? 'R-' : 'S-';
-    return prefix + Math.floor(1000 + Math.random() * 9000);
+    return prefix + Math.floor(1000 + Math.random() * 9000) + '-' + Date.now().toString().slice(-4);
   };
   
   const getNextCustomerId = (records) => {
@@ -187,6 +207,7 @@ export default function App() {
     customerId: '', 
     clientType: 'New', 
     sourceDetail: 'Walk-in',
+    referredBy: '', 
     language: 'CN',
     stylist: 'Man',
     firstName: '',
@@ -220,11 +241,33 @@ export default function App() {
   const [showNameSuggest, setShowNameSuggest] = useState(false);
   const [nameSuggests, setNameSuggests] = useState([]);
   
+  // Referral Suggest State
+  const [showReferralSuggest, setShowReferralSuggest] = useState(false);
+  const [referralSuggests, setReferralSuggests] = useState([]);
+
+  // Retroactive ID Fix applied here to guarantee every record has a serviceId.
   const [historyRecords, setHistoryRecords] = useState(() => {
     const saved = localStorage.getItem('headline_salon_history_v11');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+       try {
+           let parsed = JSON.parse(saved);
+           return parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` }));
+       } catch (e) {
+           return [];
+       }
+    }
     return [];
   });
+
+  // Historical Revenue Input State
+  const [historicalRevenue, setHistoricalRevenue] = useState(() => {
+    const saved = localStorage.getItem('headline_historical_rev');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue));
+  }, [historicalRevenue]);
 
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
   const [dashboardStartDate, setDashboardStartDate] = useState('');
@@ -326,7 +369,8 @@ export default function App() {
           preferences: record.notes || '',
           preferredStylist: record.stylist,
           interests: [],
-          latestService: ''
+          latestService: '',
+          referralsMade: 0 
         };
       }
       
@@ -344,27 +388,62 @@ export default function App() {
         p.preferredStylist = record.stylist;
         if (record.formula) p.latestFormula = record.formula;
         
-        // Find valid latest service name (ignore systems tags)
         if (record.services) {
             const validSvcs = record.services.split(',').map(s=>s.trim()).filter(s => s && !s.includes('沒有記錄') && !s.includes('系統匯入') && !s.includes('建立檔案'));
             if(validSvcs.length > 0) p.latestService = validSvcs.join(', ');
         }
       }
 
-      // Merge interests
       if (record.interests) {
           const arr = Array.isArray(record.interests) ? record.interests : record.interests.split(',').map(s=>s.trim());
           arr.forEach(i => { if(i && !p.interests.includes(i)) p.interests.push(i) });
       }
     });
 
+    // Referral Calculation (BUG FIXED)
+    Object.values(profiles).forEach(p => {
+        if (p.customerId) {
+            p.referralsMade = historyRecords.filter(r => {
+                if (!r.referredBy || r.referredBy.trim() === '') return false;
+                const ref = r.referredBy;
+                
+                // Exact format match from Auto-Suggest
+                if (ref.toUpperCase().includes(p.customerId.toUpperCase())) return true;
+                
+                // Safe includes checks ensuring it doesn't match empty strings!
+                const matchPhone = p.phone && String(p.phone).trim().length >= 8 && ref.includes(String(p.phone));
+                const matchName = p.fullName && String(p.fullName).trim().length >= 2 && ref.toLowerCase().includes(String(p.fullName).toLowerCase());
+                
+                return matchPhone || matchName;
+            }).length;
+        }
+    });
+
     let result = Object.values(profiles).map(p => {
       let tags = [];
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
-      if (p.visitCount === 1) tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
       
-      const lastVisit = new Date(p.latestVisitDate === '1970-01-01' ? Date.now() : p.latestVisitDate);
-      const daysSince = Math.floor((new Date() - lastVisit) / (1000 * 60 * 60 * 24));
+      // Determine if they were referred by someone
+      const isReferred = p.visits.some(v => (v.customerSource && v.customerSource.includes('Referral')) || (v.referredBy && v.referredBy.trim() !== ''));
+      
+      if (p.visitCount === 1) {
+          if (isReferred) {
+              tags.push({ label: '🎁 首客推薦優惠 ($100)', color: 'bg-pink-100 text-pink-800 border-pink-300' });
+          } else {
+              tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
+          }
+      }
+      
+      // Reward the referrer tag
+      if (p.referralsMade > 0) {
+          tags.push({ label: `⭐ 累積推薦獎賞 ($${p.referralsMade * 100})`, color: 'bg-yellow-100 text-yellow-800 border-yellow-400' });
+      }
+      
+      let lastVisit = new Date(p.latestVisitDate === '1970-01-01' ? Date.now() : p.latestVisitDate);
+      let daysSince = 0;
+      if (!isNaN(lastVisit.getTime())) {
+          daysSince = Math.floor((new Date() - lastVisit) / (1000 * 60 * 60 * 24));
+      }
       
       if (daysSince > 90 && p.visitCount > 0) {
         tags.push({ label: '⚠️ 流失風險', color: 'bg-red-100 text-red-900 border-red-300' });
@@ -390,7 +469,7 @@ export default function App() {
     setFormData(prev => ({ ...prev, firstName: val }));
     
     if (val.trim().length > 0) {
-      const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && p.phone.includes(val)));
+      const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val)));
       setNameSuggests(matches);
       setShowNameSuggest(matches.length > 0);
     } else {
@@ -425,6 +504,33 @@ export default function App() {
     triggerNotification(`✅ 已成功帶入舊客資料`);
   };
 
+  // Referral Auto-Suggest Handler
+  const handleReferralSearchInput = (e) => {
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, referredBy: val }));
+    
+    if (val.trim().length > 0) {
+      const matches = crmProfiles.filter(p => 
+          String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || 
+          (p.phone && String(p.phone).includes(val)) ||
+          (p.customerId && String(p.customerId).toLowerCase().includes(val.toLowerCase()))
+      );
+      setReferralSuggests(matches);
+      setShowReferralSuggest(matches.length > 0);
+    } else {
+      setShowReferralSuggest(false);
+    }
+  };
+
+  const handleSelectReferralSuggest = (profile) => {
+    playAudioFeedback('click');
+    setFormData(prev => ({
+      ...prev,
+      referredBy: `${profile.customerId} - ${profile.fullName}`
+    }));
+    setShowReferralSuggest(false);
+  };
+
   const handleSubmitCheckout = (e) => {
     e.preventDefault();
     if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
@@ -451,10 +557,8 @@ export default function App() {
     };
 
     setTimeout(async () => {
-      // 1. 先存入本機
       setHistoryRecords(prev => [finalRecord, ...prev]);
       
-      // 2. 背景即時同步到 Google Sheet
       if (driveApiUrl) {
         try {
           fetch(driveApiUrl, {
@@ -478,12 +582,13 @@ export default function App() {
 
   const handleCRMCSVExport = () => {
     playAudioFeedback('click');
-    const headers = ['客戶編號', '姓名', '性別', '語言', '電話', 'Email', 'eDM同意', '客源', '興趣需求', '總消費', '到店次數', '最新造訪', '偏好設計師', '配方與備註'];
+    const headers = ['客戶編號', '姓名', '性別', '語言', '電話', 'Email', 'eDM同意', '客源', '介紹人', '推薦過幾人', '興趣需求', '總消費', '到店次數', '最新造訪', '偏好設計師', '配方與備註'];
     const csvRows = [headers.join(',')];
     crmProfiles.forEach(p => {
         const safeNotes = (p.latestFormula || p.preferences).replace(/"/g, '""');
         const safeInterests = (p.interests || []).join(', ').replace(/"/g, '""');
-        const row = [ p.customerId, p.fullName, p.gender, p.language, `"${p.phone}"`, `"${p.email}"`, p.edmConsent, p.source, `"${safeInterests}"`, p.totalSpent, p.visitCount, p.latestVisitDate, p.preferredStylist, `"${safeNotes}"` ];
+        const referrer = p.visits.find(v => v.referredBy)?.referredBy || '';
+        const row = [ p.customerId, p.fullName, p.gender, p.language, `"${p.phone}"`, `"${p.email}"`, p.edmConsent, p.source, `"${referrer}"`, p.referralsMade, `"${safeInterests}"`, p.totalSpent, p.visitCount, p.latestVisitDate, p.preferredStylist, `"${safeNotes}"` ];
         csvRows.push(row.join(','));
     });
     const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -496,14 +601,14 @@ export default function App() {
 
   const handleTransactionCSVExport = () => {
     playAudioFeedback('click');
-    const headers = ['交易編號', '服務日期', '客戶編號', '姓名', '主理設計師', '客源', '服務項目', '零售產品', '消費總額', '支付方式', '化學配方', '備註與建議', '照片連結'];
+    const headers = ['交易編號', '服務日期', '客戶編號', '姓名', '主理設計師', '客源', '介紹人', '服務項目', '零售產品', '消費總額', '支付方式', '化學配方', '備註與建議', '照片連結'];
     const csvRows = [headers.join(',')];
     historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
         const safeServices = (r.services || '').replace(/"/g, '""');
         const safeRetail = (r.retailItems || '').replace(/"/g, '""');
         const safeFormula = (r.formula || '').replace(/"/g, '""');
         const safeNotes = (r.notes || '').trim().replace(/"/g, '""');
-        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), r.stylist, r.customerSource, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
+        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), r.stylist, r.customerSource, `"${r.referredBy || ''}"`, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
         csvRows.push(row.join(','));
     });
     const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -526,7 +631,6 @@ export default function App() {
     triggerNotification('✅ 系統備份檔案已成功下載！');
   };
 
-  // Fixed handleJSONImport missing function
   const handleJSONImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -538,17 +642,19 @@ export default function App() {
         if (Array.isArray(importedData)) {
           setHistoryRecords(prev => {
             const existingIds = new Set(prev.map(r => r.serviceId));
-            const newRecords = importedData.filter(r => !existingIds.has(r.serviceId));
+            const newRecords = importedData
+                .map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-IMP-${Date.now()}-${i}` })
+                .filter(r => !existingIds.has(r.serviceId));
             return [...newRecords, ...prev];
           });
-          triggerNotification(`✅ 成功還原 ${importedData.length} 筆資料！`);
+          triggerNotification(`✅ 成功還原資料！`);
         } else throw new Error('Invalid format');
       } catch (err) {
         triggerNotification(`❌ JSON 格式不符。`);
       }
     };
     reader.readAsText(file);
-    e.target.value = null; // Reset input so same file can be uploaded again if needed
+    e.target.value = null; 
   };
 
   const handleCloudRefresh = async () => {
@@ -561,9 +667,8 @@ export default function App() {
       const res = await fetch(driveApiUrl);
       const data = await res.json();
       if (data && Array.isArray(data)) {
-        const validData = data.filter(r => r && r.serviceId);
+        const validData = data.map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-CLD-${Date.now()}-${i}` });
         
-        // Auto-Deduplication by Service ID
         const uniqueDataMap = new Map();
         validData.forEach(item => uniqueDataMap.set(item.serviceId, item));
         const uniqueData = Array.from(uniqueDataMap.values());
@@ -620,12 +725,15 @@ export default function App() {
       if (dashboardPeriod === 'week') { const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); return rDate >= weekAgo; }
       if (dashboardPeriod === 'month') return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
       if (dashboardPeriod === 'year') return rDate.getFullYear() === now.getFullYear();
-      return true; // if Custom but dates not set, ignore Custom logic for main charts
+      return true; 
     });
 
     let totalRev = 0, retailRev = 0, maleCount = 0, enCount = 0, returningCount = 0, chemCount = 0;
     const stylistMap = {};
     const serviceMap = {};
+    
+    const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+    const weeklyTraffic = Array(7).fill(0).map((_, i) => ({ name: dayNames[i], 客數: 0 }));
 
     filtered.forEach(r => { 
       totalRev += (parseInt(r.price) || 0); 
@@ -651,6 +759,11 @@ export default function App() {
         }
       });
       if(hasChem) chemCount++;
+
+      const d = new Date(parseDateFlexible(r.date) || Date.now());
+      if (!isNaN(d.getDay())) {
+         weeklyTraffic[d.getDay()].客數 += 1;
+      }
     });
 
     const totalClients = filtered.length;
@@ -661,8 +774,11 @@ export default function App() {
     for (let i = revenueMonths - 1; i >= 0; i--) {
        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
        const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
-       monthlyRev[mLabel] = 0;
+       // Hybrid engine: Read from history static settings if available
+       monthlyRev[mLabel] = historicalRevenue[mLabel] || 0;
     }
+    
+    // Add real live records
     historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
        const d = new Date(parseDateFlexible(r.date) || Date.now());
        const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
@@ -672,7 +788,6 @@ export default function App() {
     });
     const monthlyChart = Object.keys(monthlyRev).map(k => ({ month: k, revenue: monthlyRev[k] }));
 
-    // List Filter for bottom table
     let listFiltered = historyRecords.filter(r => !r.isProfileOnly);
     if(dashboardStartDate && dashboardEndDate) {
        listFiltered = listFiltered.filter(r => {
@@ -682,7 +797,7 @@ export default function App() {
     }
 
     return { 
-      totalRev, totalClients, retailRev, stylistChart, serviceChart, monthlyChart,
+      totalRev, totalClients, retailRev, stylistChart, serviceChart, monthlyChart, weeklyTraffic,
       filteredRecords: listFiltered,
       avgSpending: totalClients > 0 ? (totalRev / totalClients).toFixed(0) : 0, 
       malePct: totalClients > 0 ? ((maleCount / totalClients) * 100).toFixed(0) : 0, 
@@ -694,7 +809,7 @@ export default function App() {
       retailPct: totalRev > 0 ? ((retailRev / totalRev) * 100).toFixed(1) : 0,
       chemPct: totalClients > 0 ? ((chemCount / totalClients) * 100).toFixed(0) : 0
     };
-  }, [historyRecords, dashboardPeriod, revenueMonths, crmProfiles, dashboardStartDate, dashboardEndDate]);
+  }, [historyRecords, dashboardPeriod, revenueMonths, crmProfiles, dashboardStartDate, dashboardEndDate, historicalRevenue]);
 
   const auditData = useMemo(() => {
      const issues = [];
@@ -711,7 +826,7 @@ export default function App() {
 
      const phoneMap = {};
      crmProfiles.forEach(p => {
-         if(p.phone && p.phone.length > 5) {
+         if(p.phone && String(p.phone).trim().length > 5) {
              if(phoneMap[p.phone]) phoneMap[p.phone].push(p);
              else phoneMap[p.phone] = [p];
          }
@@ -726,6 +841,10 @@ export default function App() {
   }, [historyRecords, crmProfiles]);
 
   const showBirthday = formData.clientType === 'New' || (!formData.birthMonth && formData.clientType === 'Repeated');
+  
+  const currentProfile = useMemo(() => {
+     return formData.customerId ? crmProfiles.find(p => p.customerId === formData.customerId) : null;
+  }, [formData.customerId, crmProfiles]);
 
   return (
     <div className="h-screen flex flex-col font-sans selection:bg-[#E8DCC8] selection:text-[#4A2511] overflow-hidden bg-[#F6EFE9] text-[#4A2511]">
@@ -736,12 +855,11 @@ export default function App() {
         </div>
       )}
 
-      {}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8">
           <div className="flex flex-col items-start justify-center select-none pt-1">
             <h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.1.1 Pro</span>
+                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.2.0 Pro</span>
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
@@ -771,16 +889,13 @@ export default function App() {
         </div>
       </header>
 
-      {}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
         
-        {activeTab === 'checkout' && (
+        {        activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className={`grid grid-cols-1 ${hasChemicalService && !hideFormulaPanel ? 'xl:grid-cols-12' : ''} gap-6 transition-all duration-500`}>
-              {/* LEFT COLUMN */}
               <div className={`bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col ${hasChemicalService && !hideFormulaPanel ? 'xl:col-span-7' : 'xl:col-span-12'}`}>
                 
-                {/* Stylist */}
                 <div className="mb-6">
                   <div className="grid grid-cols-4 gap-4">
                     {stylists.map(s => (
@@ -793,7 +908,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Client Identity & Source */}
                 <div className="grid grid-cols-12 gap-4 mb-4 relative">
                   <div className="col-span-7 relative">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">顧客姓名 (Name)</label>
@@ -817,7 +931,7 @@ export default function App() {
                     {showNameSuggest && nameSuggests.length > 0 && (
                         <div className="absolute z-50 top-[100%] mt-2 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                            {nameSuggests.map(p => (
-                             <div key={p.customerId} onClick={() => handleSelectSuggest(p)} className="px-5 py-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
+                             <div key={p.customerId} onMouseDown={() => handleSelectSuggest(p)} className="px-5 py-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
                                <div>
                                  <span className="font-black text-xl text-[#4A2511]">{p.fullName}</span>
                                  <span className="ml-3 text-sm font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md">{p.phone}</span>
@@ -829,7 +943,7 @@ export default function App() {
                      )}
                   </div>
                   
-                  <div className="col-span-3">
+                  <div className="col-span-3 flex flex-col">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">客源狀態 (Client Status)</label>
                      <div className="flex gap-1 h-[46px]">
                        <div className="flex bg-[#F6EFE9] rounded-xl p-1 w-[45%]">
@@ -838,10 +952,36 @@ export default function App() {
                        </div>
                        {formData.clientType === 'New' && (
                          <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[55%] bg-[#F6EFE9] border-transparent rounded-xl px-1 text-xs font-bold outline-none focus:border-[#8B5A2B] border">
-                           <option>Walk-in</option><option>Referral</option><option>Tourist</option><option>Google</option><option>IG/Facebook</option>
+                           <option value="Walk-in">Walk-in</option>
+                           <option value="Referral">朋友介紹</option>
+                           <option value="Google">Google</option>
+                           <option value="IG/Facebook">IG/FB</option>
                          </select>
                        )}
                      </div>
+                     {/* Referral Auto-Suggest Input Field */}
+                     {formData.clientType === 'New' && formData.sourceDetail === 'Referral' && (
+                         <div className="mt-1 animate-in slide-in-from-top-1 relative">
+                             <input type="text" placeholder="輸入介紹人姓名或電話搜尋..." 
+                                    value={formData.referredBy} 
+                                    onChange={handleReferralSearchInput}
+                                    onBlur={() => setTimeout(() => setShowReferralSuggest(false), 200)}
+                                    className="w-full bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-1.5 text-xs font-bold text-yellow-900 outline-none focus:border-yellow-500 shadow-sm" />
+                             {showReferralSuggest && referralSuggests.length > 0 && (
+                                <div className="absolute z-50 top-[100%] mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+                                   {referralSuggests.map(p => (
+                                     <div key={p.customerId} onMouseDown={() => handleSelectReferralSuggest(p)} className="px-3 py-2 border-b last:border-0 hover:bg-yellow-50 cursor-pointer flex justify-between items-center text-xs">
+                                       <div>
+                                         <span className="font-black text-[#4A2511]">{p.fullName}</span>
+                                         {p.phone && <span className="ml-2 text-gray-400">{p.phone}</span>}
+                                       </div>
+                                       <span className="font-bold text-[#8B5A2B] bg-[#E8DCC8]/30 px-1.5 py-0.5 rounded">{p.customerId}</span>
+                                     </div>
+                                   ))}
+                                </div>
+                             )}
+                         </div>
+                     )}
                   </div>
 
                   <div className="col-span-2">
@@ -865,8 +1005,7 @@ export default function App() {
                   </div>
                   <div className="col-span-12 md:col-span-3 relative">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">聯絡電話 (Phone)</label>
-                     <input type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onClick={()=>playAudioFeedback('click')} onChange={(e) => handleInputChange('phone', e.target.value)} placeholder="09..." className={`w-full bg-[#F6EFE9] border rounded-xl py-2.5 px-3 font-bold outline-none h-[46px] transition-colors ${formData.phone && !/^\d{8,11}$/.test(formData.phone.replace(/\D/g, '')) ? 'border-red-400 focus:bg-red-50' : 'focus:bg-white'}`} />
-                     {formData.phone && !/^\d{8,11}$/.test(formData.phone.replace(/\D/g, '')) && <span className="text-[10px] text-red-500 absolute -bottom-4 left-1 font-bold">格式異常: 需 8~11 位數字</span>}
+                     <input type="text" value={formData.phone} onClick={()=>playAudioFeedback('click')} onChange={(e) => handleInputChange('phone', e.target.value)} placeholder="09..." className="w-full bg-[#F6EFE9] border rounded-xl py-2.5 px-3 font-bold outline-none h-[46px] transition-colors focus:bg-white" />
                   </div>
                   <div className={`col-span-12 ${showBirthday ? 'md:col-span-2' : 'md:col-span-3'}`}>
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500 flex items-center justify-between">
@@ -894,7 +1033,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Email Consent row */}
                 {formData.email.trim().length > 0 && !formData.edmConsent && (
                    <div className="mb-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 animate-in slide-in-from-top-2">
                      <label className="block text-sm font-bold text-emerald-800 mb-2">接收優惠資訊同意 (香港個人資料條例)</label>
@@ -911,7 +1049,6 @@ export default function App() {
                 
                 <div className="border-b border-gray-100 mb-6"></div>
 
-                {/* Services & Retail */}
                 <div className="mb-6 border-b border-gray-100 pb-6">
                   <div className="flex items-center justify-between mb-3">
                     <label className="block text-sm font-bold uppercase tracking-wider text-gray-500">服務項目 (Services)</label>
@@ -929,7 +1066,6 @@ export default function App() {
                   <input type="text" placeholder="+ 其他客製服務或套餐名稱..." onClick={()=>playAudioFeedback('click')} value={formData.customService} onChange={(e) => handleInputChange('customService', e.target.value)}
                     className="w-full bg-[#F6EFE9] border-transparent rounded-xl py-2 px-4 text-base font-bold outline-none focus:bg-white focus:border-[#8B5A2B] border transition-colors mb-4" />
 
-                  {/* Interests Tags */}
                   <div className="mb-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                      <label className="block text-sm font-bold text-blue-900 mb-1">客人興趣 / 需求 <span className="text-xs text-blue-600 font-normal">(服務期間觀察到的)</span></label>
                      <div className="flex flex-wrap gap-2 mt-2">
@@ -951,7 +1087,6 @@ export default function App() {
                      </div>
                   </div>
 
-                  {/* Retail Toggle */}
                   <button type="button" onClick={() => { playAudioFeedback('click'); setShowRetail(!showRetail); }} className="flex items-center space-x-2 text-[#8B5A2B] font-bold text-sm hover:opacity-80 transition-colors bg-[#F6EFE9] px-3 py-1.5 rounded-lg">
                      {showRetail ? <Icons.Minus /> : <Icons.Plus />} <span>零售產品 (Retail)</span>
                   </button>
@@ -968,7 +1103,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Payment */}
                 <div className="grid grid-cols-12 gap-5 p-6 rounded-3xl" style={{ backgroundColor: activeTheme.light, border: `1px solid ${activeTheme.hex}30` }}>
                   <div className="col-span-3">
                     <label className="block text-sm font-bold uppercase tracking-wider mb-2" style={{ color: activeTheme.hex }}>服務小計 $</label>
@@ -1002,7 +1136,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Notes & Photos */}
                 <div className="mt-5">
                   <button type="button" onClick={() => { playAudioFeedback('click'); setShowNotes(!showNotes); }} 
                           className="w-full flex items-center justify-between py-4 px-6 bg-gray-50 border border-gray-200 rounded-2xl text-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
@@ -1036,7 +1169,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* RIGHT COLUMN - FORMULA */}
               {hasChemicalService && !hideFormulaPanel && (
                 <div className="xl:col-span-5 bg-white border border-[#E8DCC8] p-8 rounded-3xl flex flex-col shadow-lg animate-in slide-in-from-right-8 duration-500">
                   <div className="flex items-center justify-between border-b-2 border-gray-100 pb-5 mb-6">
@@ -1046,7 +1178,16 @@ export default function App() {
                     <button type="button" onClick={() => { playAudioFeedback('click'); setHideFormulaPanel(true); }} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"><Icons.X /></button>
                   </div>
                   <div className="mb-6 flex-1 flex flex-col">
-                    <label className="block text-sm font-bold uppercase tracking-wider mb-3 text-gray-500">完整配方與操作紀錄</label>
+                    <div className="flex justify-between items-end mb-3">
+                       <label className="block text-sm font-bold uppercase tracking-wider text-gray-500">完整配方與操作紀錄</label>
+                       {/* Auto-fill Formula Button */}
+                       {currentProfile?.latestFormula && (
+                           <button type="button" onClick={() => { playAudioFeedback('success'); handleInputChange('formula', currentProfile.latestFormula); triggerNotification('✅ 已成功帶入上次配方'); }} 
+                                   className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shadow-sm">
+                               <Icons.Refresh /> <span>♻️ 帶入上次配方</span>
+                           </button>
+                       )}
+                    </div>
                     <textarea placeholder={`例:\n8B 70ml + 7MT 30ml + 9%\n先打底藥水, 藍色藥水25分鐘...`} onClick={()=>playAudioFeedback('click')} value={formData.formula} onChange={(e) => handleInputChange('formula', e.target.value)}
                         className="w-full flex-1 bg-gray-50 border border-gray-200 rounded-3xl p-5 text-2xl font-mono focus:bg-white focus:outline-none focus:border-[#8B5A2B] focus:border-2 shadow-inner leading-relaxed transition-colors" />
                   </div>
@@ -1071,7 +1212,7 @@ export default function App() {
           </form>
         )}
 
-        {activeTab === 'crm' && (
+        {        activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6 animate-in fade-in duration-300">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b-2 border-gray-100 pb-5">
@@ -1137,14 +1278,27 @@ export default function App() {
                              <React.Fragment key={client.customerId}>
                                <tr className="hover:bg-gray-50 transition-colors">
                                  <td className="p-4 font-mono text-gray-500 text-sm">{client.customerId}</td>
-                                 <td className="p-4 font-black text-[#4A2511] text-xl flex flex-col gap-1">
+                                 <td className="p-4 font-black text-[#4A2511] text-xl flex flex-col gap-2">
                                     <div className="flex items-center gap-2">
                                        {client.fullName}
-                                       {client.daysSince > 90 && client.visitCount > 0 && <span title="流失預警" className="text-red-500"><Icons.AlertTriangle/></span>}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                       {client.tags.map((t, idx) => (
+                                           <span key={idx} className={`text-xs font-bold px-2 py-0.5 rounded-md border ${t.color}`}>{t.label}</span>
+                                       ))}
                                     </div>
                                  </td>
                                  <td className="p-4 text-base text-gray-600 font-bold">{client.gender === 'Male' ? '♂ 男' : '♀ 女'} <span className="ml-2 bg-gray-100 px-2 py-0.5 rounded">{client.language}</span></td>
-                                 <td className="p-4 text-base text-gray-600 font-bold">{client.phone}</td>
+                                 <td className="p-4 text-base text-gray-600 font-bold">
+                                    <div className="flex items-center gap-2">
+                                       <span>{client.phone}</span>
+                                       {client.phone && (
+                                         <a href={getWaLink(client.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-transform p-1 bg-emerald-50 rounded-lg">
+                                           <Icons.MessageCircle />
+                                         </a>
+                                       )}
+                                    </div>
+                                 </td>
                                  <td className="p-4 text-right">
                                     <div className="font-black text-[#4A2511] text-xl">${client.totalSpent}</div>
                                     <div className="text-sm font-bold text-gray-400">{client.visitCount} 次</div>
@@ -1234,7 +1388,14 @@ export default function App() {
                               </div>
                               
                               <div className="text-sm font-bold text-gray-500 flex items-center flex-wrap gap-2">
-                                  {client.phone && <span>📞 {client.phone}</span>}
+                                  {client.phone && (
+                                     <div className="flex items-center gap-1">
+                                        <span>📞 {client.phone}</span>
+                                        <a href={getWaLink(client.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-transform ml-1">
+                                          <Icons.MessageCircle />
+                                        </a>
+                                     </div>
+                                  )}
                                   <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{client.language}</span>
                                   {client.email && <span>📧 {client.email}</span>}
                               </div>
@@ -1392,6 +1553,7 @@ export default function App() {
                     <option value={3}>近 3 個月</option>
                     <option value={6}>近 6 個月</option>
                     <option value={12}>近 1 年</option>
+                    <option value={24}>近 2 年</option>
                   </select>
                 </div>
                 <ResponsiveContainer width="100%" height="100%">
@@ -1405,40 +1567,61 @@ export default function App() {
                 </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈 (受上方期間連動)</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
+              
+              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
+                <h3 className="text-xl font-black mb-6 text-center text-[#4A2511]">設計師業績佔比</h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 15, fontWeight: 'bold' }} width={80}/>
-                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={40}>
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={60}/>
+                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={30}>
                         {dashboardData.stylistChart.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
+                ) : <div className="flex-1 flex items-center justify-center text-lg font-bold text-gray-300">尚無數據</div>}
               </div>
 
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">熱門服務排行</h3>
+              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
+                <h3 className="text-xl font-black mb-6 text-center text-[#4A2511]">熱門服務排行</h3>
                 {dashboardData.serviceChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                    <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={160}/>
-                      <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="count" fill={activeTheme.hex} radius={[0, 12, 12, 0]} barSize={40} />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 11, fontWeight: 'bold' }} width={120}/>
+                      <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                      <Bar dataKey="count" fill={activeTheme.hex} radius={[0, 12, 12, 0]} barSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
+                ) : <div className="flex-1 flex items-center justify-center text-lg font-bold text-gray-300">尚無數據</div>}
               </div>
+
+              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><Icons.Chart className="w-20 h-20" /></div>
+                <h3 className="text-xl font-black mb-2 text-center text-[#4A2511]">離峰時段分析 (客流量)</h3>
+                <p className="text-xs text-center text-gray-400 font-bold mb-6">找出最空閒的星期幾，精準推播優惠！</p>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dashboardData.weeklyTraffic} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8DCC8" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8B5A2B', fontSize: 12, fontWeight: 'bold' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8B5A2B', fontSize: 12 }} />
+                    <Tooltip cursor={{fill: '#F6EFE9'}} contentStyle={{borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)'}} />
+                    <Bar dataKey="客數" fill="#8B5A2B" radius={[8, 8, 0, 0]} barSize={25}>
+                       {dashboardData.weeklyTraffic.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.客數 === Math.min(...dashboardData.weeklyTraffic.map(d=>d.客數)) && entry.客數 > 0 ? '#f97316' : '#8B5A2B'} />
+                        ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
             </div>
 
             {/* TRANSACTION LIST SECTION */}
@@ -1455,7 +1638,7 @@ export default function App() {
                  <table className="w-full text-left text-sm whitespace-nowrap">
                    <thead className="bg-[#F6EFE9] sticky top-0 z-10 text-[#4A2511]">
                      <tr>
-                       <th className="p-4 font-bold rounded-tl-xl">日期</th>
+                       <th className="p-4 font-bold rounded-tl-xl">服務日期 / 建立時間</th>
                        <th className="p-4 font-bold">交易單號</th>
                        <th className="p-4 font-bold">客戶姓名</th>
                        <th className="p-4 font-bold">設計師</th>
@@ -1467,9 +1650,15 @@ export default function App() {
                    <tbody className="divide-y divide-[#E8DCC8]">
                      {dashboardData.filteredRecords.sort((a,b) => String(formatShortDate(b.date)).localeCompare(String(formatShortDate(a.date)))).map((r, i) => (
                        <tr key={i} onClick={() => { playAudioFeedback('click'); setEditModal({...r, firstName: getFullName(r)}); }} className="hover:bg-blue-50 transition-colors cursor-pointer">
-                         <td className="p-4 font-bold text-gray-600">{formatShortDate(r.date)}</td>
+                         <td className="p-4 font-bold text-gray-600">
+                            <div>{formatShortDate(r.date)}</div>
+                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">{r.timestamp ? new Date(r.timestamp).toLocaleString('zh-TW', {hour12: false, month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : ''}</div>
+                         </td>
                          <td className="p-4 font-mono text-gray-400">{r.serviceId}</td>
-                         <td className="p-4 font-black text-[#4A2511]">{r.firstName || r.name}</td>
+                         <td className="p-4 font-black text-[#4A2511]">
+                           {r.firstName || r.name}
+                           {r.referredBy && <span className="block text-[10px] text-amber-600">由 {r.referredBy} 推薦</span>}
+                         </td>
                          <td className="p-4">
                             <span className="px-2 py-1 rounded-md text-white text-xs font-bold shadow-sm" style={{backgroundColor: STYLIST_THEMES[r.stylist]?.hex || '#595959'}}>{r.stylist}</span>
                          </td>
@@ -1512,9 +1701,7 @@ export default function App() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 
-                {/* LEFT COL: AUDIT & RESTORE */}
                 <div className="flex flex-col gap-6">
-                    {/* AUDIT */}
                     <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
                         <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
                            <Icons.AlertTriangle /> <span>資料健康審查 (Audit)</span>
@@ -1542,7 +1729,6 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* RESTORE */}
                     <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
                         <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
                            <Icons.Upload /> <span>本地 JSON 還原 (Local Restore)</span>
@@ -1557,10 +1743,8 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* RIGHT COL: MANUAL, CLOUD, EXPORT */}
                 <div className="flex flex-col gap-6">
                     
-                    {/* MANUAL */}
                     <div className="bg-[#4A2511] text-white rounded-3xl p-8 shadow-xl">
                         <h3 className="text-xl font-black mb-4 flex items-center gap-2 border-b border-[#6D3A14] pb-3 text-amber-100">
                            <Icons.Check /> <span>資料安全操作指南</span>
@@ -1573,7 +1757,6 @@ export default function App() {
                         </ul>
                     </div>
 
-                    {/* CLOUD SYNC */}
                     <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm relative overflow-hidden">
                       {isSyncing && (
                          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
@@ -1600,7 +1783,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* EXPORT */}
                     <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
                       <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
                          <Icons.Download /> <span>實體檔案匯出 (Local Export)</span>
@@ -1634,7 +1816,6 @@ export default function App() {
         )}
       </main>
 
-      {}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-[#4A2511]/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300 border-4 border-[#E8DCC8]">
@@ -1644,9 +1825,20 @@ export default function App() {
               </svg>
             </div>
             <h3 className="text-4xl font-black mb-2 text-[#4A2511]">結帳成功！</h3>
-            <p className="text-lg mb-8 text-gray-500 font-bold flex items-center justify-center gap-2 animate-pulse">
-               ⭐⭐⭐⭐⭐ <span className="text-amber-600">別忘了邀請客人留下 Google 好評！</span>
-            </p>
+            <div className="flex flex-col items-center justify-center mb-8 gap-3 mt-4">
+               <div className="flex items-center justify-center gap-2">
+                 <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                 </svg>
+                 <span className="text-2xl font-black text-gray-700">Google Review</span>
+               </div>
+               <p className="text-lg text-gray-500 font-bold flex items-center justify-center gap-2 animate-pulse">
+                  ⭐⭐⭐⭐⭐ <span className="text-amber-600">別忘了邀請客人留下好評！</span>
+               </p>
+            </div>
             <button onClick={() => { playAudioFeedback('click'); setShowSuccessModal(false); }} className="w-full text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg hover:opacity-90" style={{ backgroundColor: activeTheme.hex }}>完成 (Done)</button>
           </div>
         </div>
@@ -1676,7 +1868,7 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault();
             playAudioFeedback('success');
-            setHistoryRecords(prev => prev.map(r => r.serviceId === editModal.serviceId ? { ...editModal } : r));
+            setHistoryRecords(prev => prev.map(r => r.serviceId === editModal.serviceId ? { ...r, ...editModal } : r));
             triggerNotification(`已更新服務紀錄！`);
             setEditModal(null);
           }} className="bg-white rounded-[2rem] max-w-2xl w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
@@ -1700,7 +1892,7 @@ export default function App() {
                     return (
                       <button key={service} type="button" onClick={() => {
                           playAudioFeedback('click');
-                          let sArr = cleanServices;
+                          let sArr = [...cleanServices];
                           if (isSelected) sArr = sArr.filter(s => s !== service);
                           else sArr.push(service);
                           setEditModal({...editModal, services: sArr.join(', ')});
@@ -1729,9 +1921,15 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault();
             playAudioFeedback('success');
+            const newFullName = e.target.fullName.value.trim();
+            const parts = newFullName.split(' ');
+            const newFirst = parts[0];
+            const newLast = parts.length > 1 ? parts.slice(1).join(' ') : '';
+            
             setHistoryRecords(prev => prev.map(r => r.customerId === profileEditData.customerId ? { 
-                ...r, firstName: document.getElementById('edit-name').value, gender: e.target.gender.value, language: e.target.language.value, phone: e.target.phone.value, email: e.target.email.value, birthMonth: e.target.birthMonth.value
+                ...r, firstName: newFirst, lastName: newLast, gender: e.target.gender.value, language: e.target.language.value, phone: e.target.phone.value, email: e.target.email.value, birthMonth: e.target.birthMonth.value
             } : r));
+            
             triggerNotification(`已更新客戶檔案！`);
             setProfileEditData(null);
           }} className="bg-white rounded-[2rem] max-w-lg w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col">
@@ -1740,7 +1938,7 @@ export default function App() {
               <div>
                  <label className="block text-sm font-bold uppercase mb-2 text-gray-500">姓名 (Name)</label>
                  <div className="relative">
-                    <input type="text" id="edit-name" defaultValue={profileEditData.fullName} required className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 pr-10 font-bold outline-none border focus:border-[#8B5A2B]" />
+                    <input type="text" name="fullName" id="edit-name" defaultValue={profileEditData.fullName} required className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 pr-10 font-bold outline-none border focus:border-[#8B5A2B]" />
                     <button type="button" onClick={() => { document.getElementById('edit-name').value = ''; document.getElementById('edit-name').focus(); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:bg-gray-200 rounded-full transition-colors"><Icons.X className="w-4 h-4" /></button>
                  </div>
               </div>
