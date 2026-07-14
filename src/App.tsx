@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from 'recharts';
 
-// --- Icons ---
 const Icons = {
   Check: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>,
   User: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
@@ -29,11 +27,16 @@ const Icons = {
   Settings: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
   Cart: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
   AlertTriangle: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
+  Photo: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Link: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>,
   Cloud: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>,
+  Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
   Lock: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
-  Refresh: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
-  MessageCircle: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+  Refresh: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+  MessageCircle: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+  Calendar: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+  ChevronLeft: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>,
+  ChevronRight: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
 };
 
 const STYLIST_THEMES = {
@@ -55,6 +58,23 @@ const paymentMethods = [
 ];
 const defaultServices = ['剪髮 (Cut)', '洗吹 (Wash & Blow)', '電髮 (Perm)', '全頭染髮 (Color)', '髮根補染 (Root Touch)', '漂髮 (Bleach)', '挑染 (Highlights)', '角蛋白護理 (Keratin)', '頭皮理療 (Treatment)'];
 const birthMonthsList = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','不提供'];
+
+// Appointment Templates
+const APPOINTMENT_TEMPLATES = [
+    { id: 't1', label: '洗吹 (Wash & Blow) - 30m', duration: 30, service: '洗吹 (Wash & Blow)' },
+    { id: 't2', label: '剪髮 (Haircut) - 60m', duration: 60, service: '剪髮 (Cut)' },
+    { id: 't6', label: '頭皮/角蛋白理療 (Treatment) - 60m', duration: 60, service: '頭皮理療 (Treatment)' },
+    { id: 't3', label: '染髮 + 剪髮 (Color & Cut) - 120m', duration: 120, service: '全頭染髮 (Color), 剪髮 (Cut)' },
+    { id: 't5', label: '電髮 + 剪髮 (Perm & Cut) - 150m', duration: 150, service: '電髮 (Perm), 剪髮 (Cut)' },
+    { id: 't4', label: '漂染套餐 (Bleach & Color) - 180m', duration: 180, service: '漂髮 (Bleach), 全頭染髮 (Color)' },
+];
+
+// Time slots for scheduler
+const TIME_SLOTS = Array.from({length: 21}, (_, i) => {
+    const hours = Math.floor(i / 2) + 10;
+    const mins = i % 2 === 0 ? '00' : '30';
+    return `${hours}:${mins}`;
+});
 
 let audioCtx = null;
 const playAudioFeedback = (type) => {
@@ -123,8 +143,6 @@ const parseDateFlexible = (dateStr) => {
     const cleanStr = String(dateStr).trim();
     let d = new Date(cleanStr);
     if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
-    
-    // Catch YYYY-DD-MM typo (e.g., 2026-31-01)
     const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (ydmMatch) {
         if (parseInt(ydmMatch[2]) > 12 && parseInt(ydmMatch[3]) <= 12) {
@@ -132,53 +150,70 @@ const parseDateFlexible = (dateStr) => {
            if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
         }
     }
-    
     const zhMatch = cleanStr.match(/(\d{1,2})月(\d{1,2})日(\d{4})/);
-    if (zhMatch) {
-       return `${zhMatch[3]}-${zhMatch[1].padStart(2, '0')}-${zhMatch[2].padStart(2, '0')}`;
-    }
-    return cleanStr.split(' ')[0]; // Fallback
+    if (zhMatch) return `${zhMatch[3]}-${zhMatch[1].padStart(2, '0')}-${zhMatch[2].padStart(2, '0')}`;
+    return cleanStr.split(' ')[0];
   } catch (e) {
     return String(dateStr);
   }
 };
 
 const formatShortDate = parseDateFlexible;
-
 const getWaLink = (phone) => {
   if (!phone) return '#';
   const digits = phone.replace(/\D/g, '');
-  // Auto prefix 852 for standard 8-digit Hong Kong numbers
   if (digits.length === 8) return `https://wa.me/852${digits}`;
   return `https://wa.me/${digits}`;
 };
 
+const getFullName = (record) => {
+  if (!record) return 'Unknown';
+  if (record.firstName || record.lastName) return `${record.firstName || ''} ${record.lastName || ''}`.trim();
+  return record.name || 'Unknown';
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('checkout'); 
+  const [activeTab, setActiveTab] = useState('scheduler'); 
   const [crmViewMode, setCrmViewMode] = useState('cards'); 
   const [crmSortBy, setCrmSortBy] = useState('latestVisit'); 
   const [crmSearchQuery, setCrmSearchQuery] = useState(''); 
   const [expandedHistory, setExpandedHistory] = useState({});
   const [showNotes, setShowNotes] = useState(false);
   const [showRetail, setShowRetail] = useState(false);
+  const [showEmailField, setShowEmailField] = useState(false);
   const [notification, setNotification] = useState(null);
   const [hideFormulaPanel, setHideFormulaPanel] = useState(false);
 
   // Data Hub Auth
   const [dataHubUnlocked, setDataHubUnlocked] = useState(false);
   const [authPassword, setAuthPassword] = useState('');
-
+  const [importMode, setImportMode] = useState('csv_paste'); 
+  const [importInput, setImportInput] = useState('');
+  
   // Modals State
   const [deleteConfirm, setDeleteConfirm] = useState(null); 
   const [editModal, setEditModal] = useState(null); 
+  const [profileAddModal, setProfileAddModal] = useState(false);
   const [profileEditData, setProfileEditData] = useState(null);
   const [clientDeleteConfirm, setClientDeleteConfirm] = useState(null);
+  const [aptDeleteConfirm, setAptDeleteConfirm] = useState(null);
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Cloud Sync State
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api') || '');
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api') || 'https://script.google.com/macros/s/AKfycbwkJ5cLdYjXyVlRdAwGMBjMdJinl2ilMGEBy_OEi6yOk2V_O06Lz2j8ce8jw_NIx4DoPQ/exec');
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Scheduler State
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [schedViewMode, setSchedViewMode] = useState('day'); 
+  const [schedSelectedDate, setSchedSelectedDate] = useState(new Date());
+  const [schedDetailModal, setSchedDetailModal] = useState(null);
+  const [schedAddEditModal, setSchedAddEditModal] = useState(null);
+  const [schedClientMatches, setSchedClientMatches] = useState([]);
+  const [schedFilterStylist, setSchedFilterStylist] = useState('All');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Settings State
   const [hairServices, setHairServices] = useState(() => {
@@ -187,20 +222,36 @@ export default function App() {
   });
 
   useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000); 
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('headline_services_v11', JSON.stringify(hairServices));
   }, [hairServices]);
   
   const generateServiceId = (isRetailOnly = false) => {
     const prefix = isRetailOnly ? 'R-' : 'S-';
-    return prefix + Math.floor(1000 + Math.random() * 9000) + '-' + Date.now().toString().slice(-4);
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const random = String(Math.floor(10 + Math.random() * 90)); 
+    return `${prefix}${yy}${mm}${dd}-${random}`;
   };
   
   const getNextCustomerId = (records) => {
-    const cIds = records.map(r => r.customerId).filter(id => id && /^C\d{4,}$/.test(id));
-    if (cIds.length === 0) return 'C0001';
-    const nums = cIds.map(id => parseInt(id.replace('C', ''), 10));
-    const max = Math.max(...nums);
-    return `C${String(max + 1).padStart(4, '0')}`;
+    let maxId = 0;
+    records.forEach(r => {
+      if (r.customerId) {
+        const match = String(r.customerId).match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (num > maxId) maxId = num;
+        }
+      }
+    });
+    return `C${String(maxId + 1).padStart(4, '0')}`;
   };
 
   const getInitialForm = () => ({
@@ -232,7 +283,10 @@ export default function App() {
     interests: [],
     customInterest: '',
     notes: '',
-    photoLink: ''
+    photoLink: '',
+    nextSuggest: '',
+    _eventId: null,
+    _stylist: null
   });
 
   const [formData, setFormData] = useState(getInitialForm());
@@ -241,33 +295,24 @@ export default function App() {
   const [showNameSuggest, setShowNameSuggest] = useState(false);
   const [nameSuggests, setNameSuggests] = useState([]);
   
-  // Referral Suggest State
   const [showReferralSuggest, setShowReferralSuggest] = useState(false);
   const [referralSuggests, setReferralSuggests] = useState([]);
 
-  // Retroactive ID Fix applied here to guarantee every record has a serviceId.
   const [historyRecords, setHistoryRecords] = useState(() => {
     const saved = localStorage.getItem('headline_salon_history_v11');
     if (saved) {
        try {
            let parsed = JSON.parse(saved);
            return parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` }));
-       } catch (e) {
-           return [];
-       }
+       } catch (e) { return []; }
     }
     return [];
   });
 
-  // Historical Revenue Input State
   const [historicalRevenue, setHistoricalRevenue] = useState(() => {
     const saved = localStorage.getItem('headline_historical_rev');
     return saved ? JSON.parse(saved) : {};
   });
-
-  useEffect(() => {
-    localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue));
-  }, [historicalRevenue]);
 
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
   const [dashboardStartDate, setDashboardStartDate] = useState('');
@@ -275,13 +320,9 @@ export default function App() {
   const [revenueMonths, setRevenueMonths] = useState(6);
   const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
 
-  useEffect(() => {
-    localStorage.setItem('headline_salon_history_v11', JSON.stringify(historyRecords));
-  }, [historyRecords]);
-
-  useEffect(() => {
-    localStorage.setItem('headline_drive_api', driveApiUrl);
-  }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue)); }, [historicalRevenue]);
+  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(historyRecords)); }, [historyRecords]);
+  useEffect(() => { localStorage.setItem('headline_drive_api', driveApiUrl); }, [driveApiUrl]);
 
   const triggerNotification = (msg) => {
     setNotification(msg);
@@ -293,14 +334,6 @@ export default function App() {
     setActiveTab(tab);
     if(tab !== 'datahub') setDataHubUnlocked(false);
   };
-
-  useEffect(() => {
-    const sTotal = parseInt(formData.subtotal) || 0;
-    const rTotal = parseInt(formData.retailPrice) || 0;
-    const pct = parseInt(formData.discountPct) || 0;
-    const finalPrice = Math.round((sTotal + rTotal) * (1 - pct/100));
-    setFormData(prev => ({ ...prev, price: finalPrice.toString() }));
-  }, [formData.subtotal, formData.retailPrice, formData.discountPct]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -334,15 +367,136 @@ export default function App() {
       }
   };
 
-  const hasChemicalService = useMemo(() => {
-    return [...formData.selectedServices, formData.customService].some(s => chemicalKeywords.some(k => String(s || '').toLowerCase().includes(k.toLowerCase())));
-  }, [formData.selectedServices, formData.customService]);
+  useEffect(() => {
+    const sTotal = parseInt(formData.subtotal) || 0;
+    const rTotal = parseInt(formData.retailPrice) || 0;
+    const pct = parseInt(formData.discountPct) || 0;
+    const finalPrice = Math.round((sTotal + rTotal) * (1 - pct/100));
+    setFormData(prev => ({ ...prev, price: finalPrice.toString() }));
+  }, [formData.subtotal, formData.retailPrice, formData.discountPct]);
+
+  const fetchCalendarEvents = async () => {
+    if (!driveApiUrl) return;
+    setIsCalendarLoading(true);
+    try {
+      const response = await fetch(driveApiUrl);
+      const result = await response.json();
+      if (result.status === 'success' && result.data) {
+        setCalendarEvents(result.data);
+      }
+    } catch (err) {
+      console.warn("Calendar load failed", err);
+    } finally {
+      setIsCalendarLoading(false);
+    }
+  };
 
   useEffect(() => {
-     if (hasChemicalService) setHideFormulaPanel(false);
-  }, [formData.selectedServices, formData.customService, hasChemicalService]);
+    fetchCalendarEvents();
+  }, [driveApiUrl]);
 
-  const getFullName = (record) => `${record.firstName || ''} ${record.lastName || ''}`.trim() || record.name || 'Unknown';
+  const checkConflict = (stylist, dateStr, timeStr, durationMins, excludeEventId = null) => {
+    if(!stylist || !dateStr || !timeStr || !durationMins) return false;
+    const [hour, min] = timeStr.split(':');
+    const start = new Date(dateStr);
+    start.setHours(parseInt(hour, 10), parseInt(min, 10), 0);
+    const end = new Date(start.getTime() + parseInt(durationMins, 10) * 60000);
+
+    return calendarEvents.some(e => {
+        if (excludeEventId && e.id === excludeEventId) return false;
+        if (e.stylist !== stylist) return false;
+        const eStart = new Date(e.startTime);
+        const eEnd = new Date(e.endTime);
+        if (isNaN(eStart.getTime()) || isNaN(eEnd.getTime())) return false;
+        return (start < eEnd && eStart < end);
+    });
+  };
+
+  const handleSaveCalendarEvent = async (e) => {
+    e.preventDefault();
+
+    if (checkConflict(schedAddEditModal.stylist, schedAddEditModal.date, schedAddEditModal.time, schedAddEditModal.duration, schedAddEditModal.id)) {
+        playAudioFeedback('warn');
+        triggerNotification('⚠️ 警告：該時段已有預約，將強行排入！');
+    }
+
+    const [hour, min] = schedAddEditModal.time.split(':');
+    const start = new Date(schedAddEditModal.date);
+    start.setHours(parseInt(hour, 10), parseInt(min, 10), 0);
+    const end = new Date(start.getTime() + (parseInt(schedAddEditModal.duration) || 60) * 60 * 1000);
+
+    const fakeId = schedAddEditModal.id || ('evt_' + Date.now());
+
+    const payload = {
+        action: 'create',
+        stylist: schedAddEditModal.stylist,
+        title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`,
+        description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes,
+        startTime: start.toISOString(),
+        endTime: end.toISOString()
+    };
+
+    const newLocalEvent = {
+        id: fakeId,
+        stylist: payload.stylist,
+        title: payload.title,
+        description: payload.description,
+        startTime: payload.startTime,
+        endTime: payload.endTime
+    };
+
+    setCalendarEvents(prev => {
+        const filtered = prev.filter(ev => ev.id !== schedAddEditModal.id);
+        return [...filtered, newLocalEvent];
+    });
+
+    setSchedAddEditModal(null);
+    playAudioFeedback('success');
+
+    if (!driveApiUrl) {
+        triggerNotification('✅ 已本地新增預約 (未設定 API)');
+        return;
+    }
+
+    if (schedAddEditModal.id) {
+        try {
+            await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        } catch(err) { console.error(err); }
+    }
+
+    try {
+        triggerNotification('⏳ 雲端同步中...');
+        const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        const result = await res.json();
+        if (result.status === 'success') {
+            triggerNotification('✅ 預約已成功同步至 Google 日曆！');
+            fetchCalendarEvents(); 
+        }
+    } catch(err) {
+        triggerNotification('❌ 同步至 Google 日曆失敗');
+    }
+  };
+
+  const handleDeleteCalendarEvent = async () => {
+    if (!aptDeleteConfirm) return;
+    
+    setCalendarEvents(prev => prev.filter(ev => ev.id !== aptDeleteConfirm.id));
+    setAptDeleteConfirm(null);
+    setSchedDetailModal(null);
+    playAudioFeedback('success');
+
+    if (!driveApiUrl) {
+        triggerNotification('✅ 已本地刪除預約 (未設定 API)');
+        return;
+    }
+
+    try {
+        triggerNotification('⏳ 雲端刪除中...');
+        await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        triggerNotification('✅ 已從 Google 日曆刪除');
+        fetchCalendarEvents();
+    } catch(e) { triggerNotification('❌ 雲端刪除失敗'); }
+  };
 
   const crmProfiles = useMemo(() => {
     const profiles = {};
@@ -381,7 +535,6 @@ export default function App() {
           p.visits.push(record);
       }
       
-      // Update latest info
       const recDate = formatShortDate(record.date);
       if (recDate && recDate > p.latestVisitDate && !record.isProfileOnly) {
         p.latestVisitDate = recDate;
@@ -395,25 +548,19 @@ export default function App() {
       }
 
       if (record.interests) {
-          const arr = Array.isArray(record.interests) ? record.interests : record.interests.split(',').map(s=>s.trim());
+          const arr = Array.isArray(record.interests) ? record.interests : String(record.interests).split(',').map(s=>s.trim());
           arr.forEach(i => { if(i && !p.interests.includes(i)) p.interests.push(i) });
       }
     });
 
-    // Referral Calculation (BUG FIXED)
     Object.values(profiles).forEach(p => {
         if (p.customerId) {
             p.referralsMade = historyRecords.filter(r => {
                 if (!r.referredBy || r.referredBy.trim() === '') return false;
                 const ref = r.referredBy;
-                
-                // Exact format match from Auto-Suggest
                 if (ref.toUpperCase().includes(p.customerId.toUpperCase())) return true;
-                
-                // Safe includes checks ensuring it doesn't match empty strings!
                 const matchPhone = p.phone && String(p.phone).trim().length >= 8 && ref.includes(String(p.phone));
                 const matchName = p.fullName && String(p.fullName).trim().length >= 2 && ref.toLowerCase().includes(String(p.fullName).toLowerCase());
-                
                 return matchPhone || matchName;
             }).length;
         }
@@ -422,34 +569,19 @@ export default function App() {
     let result = Object.values(profiles).map(p => {
       let tags = [];
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
-      
-      // Determine if they were referred by someone
       const isReferred = p.visits.some(v => (v.customerSource && v.customerSource.includes('Referral')) || (v.referredBy && v.referredBy.trim() !== ''));
-      
       if (p.visitCount === 1) {
-          if (isReferred) {
-              tags.push({ label: '🎁 首客推薦優惠 ($100)', color: 'bg-pink-100 text-pink-800 border-pink-300' });
-          } else {
-              tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
-          }
+          if (isReferred) tags.push({ label: '🎁 首客推薦優惠 ($100)', color: 'bg-pink-100 text-pink-800 border-pink-300' });
+          else tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
       }
-      
-      // Reward the referrer tag
-      if (p.referralsMade > 0) {
-          tags.push({ label: `⭐ 累積推薦獎賞 ($${p.referralsMade * 100})`, color: 'bg-yellow-100 text-yellow-800 border-yellow-400' });
-      }
+      if (p.referralsMade > 0) tags.push({ label: `⭐ 累積推薦獎賞 ($${p.referralsMade * 100})`, color: 'bg-yellow-100 text-yellow-800 border-yellow-400' });
       
       let lastVisit = new Date(p.latestVisitDate === '1970-01-01' ? Date.now() : p.latestVisitDate);
       let daysSince = 0;
-      if (!isNaN(lastVisit.getTime())) {
-          daysSince = Math.floor((new Date() - lastVisit) / (1000 * 60 * 60 * 24));
-      }
+      if (!isNaN(lastVisit.getTime())) daysSince = Math.floor((new Date() - lastVisit) / (1000 * 60 * 60 * 24));
       
-      if (daysSince > 90 && p.visitCount > 0) {
-        tags.push({ label: '⚠️ 流失風險', color: 'bg-red-100 text-red-900 border-red-300' });
-      } else if (daysSince > 45 && p.visits.some(v => v.services && v.services.includes('染'))) {
-        tags.push({ label: '需補染', color: 'bg-orange-100 text-orange-900 border-orange-300' });
-      }
+      if (daysSince > 90 && p.visitCount > 0) tags.push({ label: '⚠️ 流失風險', color: 'bg-red-100 text-red-900 border-red-300' });
+      else if (daysSince > 45 && p.visits.some(v => v.services && v.services.includes('染'))) tags.push({ label: '需補染', color: 'bg-orange-100 text-orange-900 border-orange-300' });
       
       p.visits.sort((a,b) => String(formatShortDate(b.date)).localeCompare(String(formatShortDate(a.date))));
       return { ...p, tags, daysSince };
@@ -464,279 +596,24 @@ export default function App() {
     return result;
   }, [historyRecords, crmSortBy]);
 
-  const handleNameSearchInput = (e) => {
-    const val = e.target.value;
-    setFormData(prev => ({ ...prev, firstName: val }));
-    
-    if (val.trim().length > 0) {
-      const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val)));
-      setNameSuggests(matches);
-      setShowNameSuggest(matches.length > 0);
-    } else {
-      setShowNameSuggest(false);
-      setFormData(prev => ({ ...prev, customerId: '' })); 
-    }
-  };
-
-  const handleSelectSuggest = (profile) => {
-    playAudioFeedback('click');
-    const parts = (profile.fullName || '').split(' ');
-    const fName = parts[0];
-    const lName = parts.length > 1 ? parts.slice(1).join(' ') : '';
-
-    setFormData(prev => ({
-      ...prev,
-      customerId: profile.customerId,
-      clientType: 'Repeated',
-      firstName: fName,
-      lastName: lName,
-      gender: profile.gender || 'Female',
-      language: profile.language || 'CN',
-      phone: profile.phone || '',
-      email: profile.email || '',
-      edmConsent: profile.edmConsent || '',
-      birthMonth: profile.birthMonth || '',
-      customerSource: '熟客 (Regular)',
-      interests: profile.interests || [],
-      hairTexture: profile.latestVisitDate !== '1970-01-01' && profile.visits[0] ? profile.visits[0].hairTexture : '正常'
-    }));
-    setShowNameSuggest(false);
-    triggerNotification(`✅ 已成功帶入舊客資料`);
-  };
-
-  // Referral Auto-Suggest Handler
-  const handleReferralSearchInput = (e) => {
-    const val = e.target.value;
-    setFormData(prev => ({ ...prev, referredBy: val }));
-    
-    if (val.trim().length > 0) {
-      const matches = crmProfiles.filter(p => 
-          String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || 
-          (p.phone && String(p.phone).includes(val)) ||
-          (p.customerId && String(p.customerId).toLowerCase().includes(val.toLowerCase()))
-      );
-      setReferralSuggests(matches);
-      setShowReferralSuggest(matches.length > 0);
-    } else {
-      setShowReferralSuggest(false);
-    }
-  };
-
-  const handleSelectReferralSuggest = (profile) => {
-    playAudioFeedback('click');
-    setFormData(prev => ({
-      ...prev,
-      referredBy: `${profile.customerId} - ${profile.fullName}`
-    }));
-    setShowReferralSuggest(false);
-  };
-
-  const handleSubmitCheckout = (e) => {
-    e.preventDefault();
-    if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
-    if (!formData.price) return triggerNotification('請確認總結金額！');
-
-    setSubmitting(true);
-    const isNew = !formData.customerId;
-    const finalCustomerId = formData.customerId || getNextCustomerId(historyRecords);
-    
-    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
-    const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
-    const isRetailOnly = !hasServices && hasRetail;
-
-    const finalRecord = {
-      ...formData,
-      customerId: finalCustomerId,
-      serviceId: generateServiceId(isRetailOnly),
-      customerSource: isNew ? `新客 (${formData.sourceDetail})` : '舊客 (Repeated)',
-      services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '),
-      notes: `${formData.hairTexture && hasChemicalService ? `【髮質:${formData.hairTexture}】 ` : ''}${formData.notes}`,
-      interests: formData.interests.join(', '),
-      isProfileOnly: false,
-      timestamp: new Date().toISOString()
-    };
-
-    setTimeout(async () => {
-      setHistoryRecords(prev => [finalRecord, ...prev]);
-      
-      if (driveApiUrl) {
-        try {
-          fetch(driveApiUrl, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'append', record: finalRecord }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-          });
-        } catch(err) {
-          console.error("雲端寫入失敗", err);
-        }
-      }
-
-      setSubmitting(false);
-      playAudioFeedback('cashier');
-      setShowSuccessModal(true);
-      setFormData(getInitialForm());
-      setShowNotes(false);
-      setShowRetail(false);
-    }, 400); 
-  };
-
-  const handleCRMCSVExport = () => {
-    playAudioFeedback('click');
-    const headers = ['客戶編號', '姓名', '性別', '語言', '電話', 'Email', 'eDM同意', '客源', '介紹人', '推薦過幾人', '興趣需求', '總消費', '到店次數', '最新造訪', '偏好設計師', '配方與備註'];
-    const csvRows = [headers.join(',')];
-    crmProfiles.forEach(p => {
-        const safeNotes = (p.latestFormula || p.preferences).replace(/"/g, '""');
-        const safeInterests = (p.interests || []).join(', ').replace(/"/g, '""');
-        const referrer = p.visits.find(v => v.referredBy)?.referredBy || '';
-        const row = [ p.customerId, p.fullName, p.gender, p.language, `"${p.phone}"`, `"${p.email}"`, p.edmConsent, p.source, `"${referrer}"`, p.referralsMade, `"${safeInterests}"`, p.totalSpent, p.visitCount, p.latestVisitDate, p.preferredStylist, `"${safeNotes}"` ];
-        csvRows.push(row.join(','));
-    });
-    const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Headline_CRM_Profiles_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  const handleTransactionCSVExport = () => {
-    playAudioFeedback('click');
-    const headers = ['交易編號', '服務日期', '客戶編號', '姓名', '主理設計師', '客源', '介紹人', '服務項目', '零售產品', '消費總額', '支付方式', '化學配方', '備註與建議', '照片連結'];
-    const csvRows = [headers.join(',')];
-    historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
-        const safeServices = (r.services || '').replace(/"/g, '""');
-        const safeRetail = (r.retailItems || '').replace(/"/g, '""');
-        const safeFormula = (r.formula || '').replace(/"/g, '""');
-        const safeNotes = (r.notes || '').trim().replace(/"/g, '""');
-        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), r.stylist, r.customerSource, `"${r.referredBy || ''}"`, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
-        csvRows.push(row.join(','));
-    });
-    const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Headline_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  const handleJSONExport = () => {
-    playAudioFeedback('click');
-    const dataStr = JSON.stringify(historyRecords, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Headline_System_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    triggerNotification('✅ 系統備份檔案已成功下載！');
-  };
-
-  const handleJSONImport = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    playAudioFeedback('click');
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target.result);
-        if (Array.isArray(importedData)) {
-          setHistoryRecords(prev => {
-            const existingIds = new Set(prev.map(r => r.serviceId));
-            const newRecords = importedData
-                .map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-IMP-${Date.now()}-${i}` })
-                .filter(r => !existingIds.has(r.serviceId));
-            return [...newRecords, ...prev];
-          });
-          triggerNotification(`✅ 成功還原資料！`);
-        } else throw new Error('Invalid format');
-      } catch (err) {
-        triggerNotification(`❌ JSON 格式不符。`);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = null; 
-  };
-
-  const handleCloudRefresh = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
-    
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    
-    try {
-      const res = await fetch(driveApiUrl);
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        const validData = data.map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-CLD-${Date.now()}-${i}` });
-        
-        const uniqueDataMap = new Map();
-        validData.forEach(item => uniqueDataMap.set(item.serviceId, item));
-        const uniqueData = Array.from(uniqueDataMap.values());
-        
-        uniqueData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setHistoryRecords(uniqueData);
-        playAudioFeedback('success');
-        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
-      } else {
-        throw new Error('Format issue');
-      }
-    } catch(e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
-    }
-    setIsSyncing(false);
-  };
-
-  const handleCloudBackup = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
-    if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
-    
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    triggerNotification('⏳ 雲端同步備份中，請稍候...');
-    
-    try {
-      const res = await fetch(driveApiUrl, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-      });
-      const result = await res.json();
-      if (result.status === 'success') {
-        playAudioFeedback('success');
-        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
-      } else {
-         throw new Error(result.message);
-      }
-    } catch (e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 備份失敗，請確認 API 網址正確。');
-    }
-    setIsSyncing(false);
-  };
-
   const dashboardData = useMemo(() => {
     const now = new Date();
-    
-    let filtered = historyRecords.filter(record => {
+    const filtered = historyRecords.filter(record => {
       if (record.isProfileOnly) return false;
       const rDate = new Date(parseDateFlexible(record.date) || Date.now());
       if (dashboardPeriod === 'day') return rDate.toDateString() === now.toDateString();
       if (dashboardPeriod === 'week') { const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); return rDate >= weekAgo; }
       if (dashboardPeriod === 'month') return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
       if (dashboardPeriod === 'year') return rDate.getFullYear() === now.getFullYear();
-      return true; 
+      return true;
     });
 
-    let totalRev = 0, retailRev = 0, maleCount = 0, enCount = 0, returningCount = 0, chemCount = 0;
+    let totalRev = 0, retailRev = 0, maleCount = 0, enCount = 0, returningCount = 0;
     const stylistMap = {};
     const serviceMap = {};
-    
-    const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-    const weeklyTraffic = Array(7).fill(0).map((_, i) => ({ name: dayNames[i], 客數: 0 }));
 
-    filtered.forEach(r => { 
-      totalRev += (parseInt(r.price) || 0); 
+    filtered.forEach(r => {
+      totalRev += (parseInt(r.price) || 0);
       const sSub = parseInt(r.subtotal) || 0;
       const rSub = parseInt(r.retailPrice) || 0;
       if (sSub + rSub > 0) retailRev += (rSub / (sSub + rSub)) * (parseInt(r.price) || 0);
@@ -744,26 +621,16 @@ export default function App() {
 
       if (r.gender === 'Male') maleCount++;
       if (r.language === 'EN') enCount++;
-      
+
       const profile = crmProfiles.find(p => p.customerId === r.customerId);
       if (profile && profile.visitCount > 1) returningCount++;
 
-      stylistMap[r.stylist] = (stylistMap[r.stylist] || 0) + (parseInt(r.price) || 0); 
+      stylistMap[r.stylist] = (stylistMap[r.stylist] || 0) + (parseInt(r.price) || 0);
       const svcs = (r.services || '').split(', ');
-      let hasChem = false;
       svcs.forEach(s => {
         const shortName = s.trim();
-        if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案') {
-            serviceMap[shortName] = (serviceMap[shortName] || 0) + 1;
-            if(chemicalKeywords.some(k => shortName.toLowerCase().includes(k.toLowerCase()))) hasChem = true;
-        }
+        if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案') serviceMap[shortName] = (serviceMap[shortName] || 0) + 1;
       });
-      if(hasChem) chemCount++;
-
-      const d = new Date(parseDateFlexible(r.date) || Date.now());
-      if (!isNaN(d.getDay())) {
-         weeklyTraffic[d.getDay()].客數 += 1;
-      }
     });
 
     const totalClients = filtered.length;
@@ -774,11 +641,8 @@ export default function App() {
     for (let i = revenueMonths - 1; i >= 0; i--) {
        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
        const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
-       // Hybrid engine: Read from history static settings if available
        monthlyRev[mLabel] = historicalRevenue[mLabel] || 0;
     }
-    
-    // Add real live records
     historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
        const d = new Date(parseDateFlexible(r.date) || Date.now());
        const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
@@ -796,18 +660,17 @@ export default function App() {
        });
     }
 
-    return { 
-      totalRev, totalClients, retailRev, stylistChart, serviceChart, monthlyChart, weeklyTraffic,
+    return {
+      totalRev, totalClients, retailRev, stylistChart, serviceChart, monthlyChart,
       filteredRecords: listFiltered,
-      avgSpending: totalClients > 0 ? (totalRev / totalClients).toFixed(0) : 0, 
-      malePct: totalClients > 0 ? ((maleCount / totalClients) * 100).toFixed(0) : 0, 
-      femalePct: totalClients > 0 ? (100 - ((maleCount / totalClients) * 100)).toFixed(0) : 0, 
-      enPct: totalClients > 0 ? ((enCount / totalClients) * 100).toFixed(0) : 0, 
-      cnPct: totalClients > 0 ? (100 - ((enCount / totalClients) * 100)).toFixed(0) : 0, 
+      avgSpending: totalClients > 0 ? (totalRev / totalClients).toFixed(0) : 0,
+      malePct: totalClients > 0 ? ((maleCount / totalClients) * 100).toFixed(0) : 0,
+      femalePct: totalClients > 0 ? (100 - ((maleCount / totalClients) * 100)).toFixed(0) : 0,
+      enPct: totalClients > 0 ? ((enCount / totalClients) * 100).toFixed(0) : 0,
+      cnPct: totalClients > 0 ? (100 - ((enCount / totalClients) * 100)).toFixed(0) : 0,
       retentionPct: totalClients > 0 ? ((returningCount / totalClients) * 100).toFixed(0) : 0,
       newPct: totalClients > 0 ? (100 - ((returningCount / totalClients) * 100)).toFixed(0) : 0,
-      retailPct: totalRev > 0 ? ((retailRev / totalRev) * 100).toFixed(1) : 0,
-      chemPct: totalClients > 0 ? ((chemCount / totalClients) * 100).toFixed(0) : 0
+      retailPct: totalRev > 0 ? ((retailRev / totalRev) * 100).toFixed(1) : 0
     };
   }, [historyRecords, dashboardPeriod, revenueMonths, crmProfiles, dashboardStartDate, dashboardEndDate, historicalRevenue]);
 
@@ -840,8 +703,439 @@ export default function App() {
      return issues;
   }, [historyRecords, crmProfiles]);
 
+  const handleSelectSuggest = (profile) => {
+    playAudioFeedback('click');
+    const parts = String(profile.fullName || '').trim().split(' ');
+    const fName = parts[0] || '';
+    const lName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+    setFormData(prev => ({
+      ...prev,
+      customerId: profile.customerId,
+      clientType: 'Repeated',
+      firstName: fName,
+      lastName: lName,
+      gender: profile.gender || 'Female',
+      language: profile.language || 'CN',
+      phone: profile.phone || '',
+      email: profile.email || '',
+      edmConsent: profile.edmConsent || '',
+      birthMonth: profile.birthMonth || '',
+      customerSource: '舊客 (Repeated)',
+      interests: profile.interests || [],
+      hairTexture: profile.latestVisitDate !== '1970-01-01' && profile.visits && profile.visits.length > 0 ? profile.visits[0].hairTexture || '正常' : '正常'
+    }));
+    setShowNameSuggest(false);
+    triggerNotification(`✅ 已成功帶入舊客資料`);
+  };
+
+  const handleCheckoutAppointment = (apt, stylist) => {
+    const existingClient = crmProfiles.find(p => p.fullName === apt.clientName || (p.phone && p.phone === apt.phone));
+    
+    if (existingClient) {
+      handleSelectSuggest(existingClient);
+      setFormData(prev => ({
+        ...prev,
+        stylist: stylist,
+        notes: `預約服務: ${apt.service}\n${apt.notes}`,
+        _eventId: apt.id,
+        _stylist: stylist
+      }));
+    } else {
+      setFormData({
+        ...getInitialForm(),
+        firstName: apt.clientName,
+        stylist: stylist,
+        phone: apt.phone || '',
+        notes: `預約服務: ${apt.service}\n${apt.notes}`,
+        _eventId: apt.id,
+        _stylist: stylist
+      });
+    }
+    
+    setSchedDetailModal(null);
+    setActiveTab('checkout');
+  };
+
+  const hasChemicalService = useMemo(() => {
+    const allServices = [...formData.selectedServices, formData.customService];
+    return allServices.some(s => chemicalKeywords.some(k => String(s || '').toLowerCase().includes(k.toLowerCase())));
+  }, [formData.selectedServices, formData.customService]);
+
+  useEffect(() => {
+      if (hasChemicalService) setHideFormulaPanel(false);
+  }, [hasChemicalService]);
+
+  const handleSubmitCheckout = (e) => {
+    e.preventDefault();
+    if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
+    if (!formData.price) return triggerNotification('請確認總結金額！');
+
+    setSubmitting(true);
+    const isNew = formData.clientType === 'New';
+    let finalCustomerId = formData.customerId;
+    let finalSource = formData.sourceDetail || 'Walk-in';
+
+    if (isNew && !finalCustomerId) {
+       finalCustomerId = getNextCustomerId(historyRecords);
+       finalSource = `新客 (${formData.sourceDetail})`;
+    } else if (formData.clientType === 'Repeated' && !finalCustomerId) {
+       finalCustomerId = getNextCustomerId(historyRecords);
+       finalSource = '舊客 (數位首建)';
+    } else if (formData.clientType === 'Repeated') {
+       finalSource = '舊客 (Repeated)';
+    }
+
+    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
+    const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
+    const isRetailOnly = !hasServices && hasRetail;
+
+    const finalRecord = {
+      ...formData,
+      customerId: finalCustomerId,
+      serviceId: generateServiceId(isRetailOnly),
+      customerSource: finalSource,
+      services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '),
+      notes: `${formData.hairTexture && hasChemicalService ? `【髮質:${formData.hairTexture}】 ` : ''}${formData.notes}`,
+      interests: formData.interests.join(', '),
+      isProfileOnly: false,
+      timestamp: new Date().toISOString()
+    };
+
+    setTimeout(async () => {
+      setHistoryRecords(prev => [finalRecord, ...prev]);
+      if (driveApiUrl) {
+        try { fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch(err) {}
+      }
+      if (formData._eventId && formData._stylist && driveApiUrl) {
+        try { fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch (e) {}
+      }
+      setSubmitting(false);
+      playAudioFeedback('cashier');
+      setShowSuccessModal(true);
+      setFormData(getInitialForm());
+      setShowNotes(false);
+      setShowRetail(false);
+      setShowEmailField(false);
+      fetchCalendarEvents();
+    }, 400); 
+  };
+
+  const parseCSV = (str) => {
+      const cleanStr = str.trim();
+      const firstDataLine = cleanStr.split('\n').find(l => l.trim().length > 0) || '';
+      const delimiter = firstDataLine.includes('\t') ? '\t' : ',';
+      const rows = [];
+      let row = [];
+      let curr = '';
+      let inQuotes = false;
+      for(let i=0; i<cleanStr.length; i++) {
+          const char = cleanStr[i];
+          if (char === '"' && cleanStr[i+1] === '"') { curr += '"'; i++; }
+          else if (char === '"') { inQuotes = !inQuotes; }
+          else if (char === delimiter && !inQuotes) { row.push(curr); curr = ''; }
+          else if (char === '\n' && !inQuotes) { row.push(curr); rows.push(row); row = []; curr = ''; }
+          else if (char !== '\r') { curr += char; }
+      }
+      if (curr) row.push(curr);
+      if (row.length > 0) rows.push(row);
+      return rows;
+  };
+
+  const formatImportDate = (dStr) => {
+      if (!dStr) return new Date().toISOString().split('T')[0];
+      const cleanStr = dStr.trim().split(' ')[0];
+      const parts = cleanStr.split(/[-/]/);
+      if (parts.length === 3) {
+          let y = parts[0], m = parts[1], d = parts[2];
+          if (y.length < 4) {
+             if (parts[2].length === 4) { y = parts[2]; m = parts[1]; d = parts[0]; } 
+             else { y = '20' + y; }
+          }
+          return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      return dStr;
+  };
+
+  const processCSVImport = (csvText) => {
+      const rows = parseCSV(csvText);
+      if(rows.length < 2) return triggerNotification('❌ 格式錯誤或無資料');
+      
+      let headerRowIdx = rows.findIndex(r => r.some(cell => cell && cell.includes('姓名')));
+      if (headerRowIdx === -1) return triggerNotification('❌ 找不到「姓名」欄位，請確認您有複製到標題列');
+
+      const headers = rows[headerRowIdx].map(h => h?.trim() || '');
+      const isProfileSheet = headers.some(h => h.includes('總消費') || h.includes('到店次數') || h.includes('最新造訪'));
+
+      const getIdx = (keywords) => {
+          let idx = headers.findIndex(h => keywords.some(k => h === k)); 
+          if (idx === -1) idx = headers.findIndex(h => keywords.some(k => h.includes(k))); 
+          return idx;
+      };
+      
+      const idxCusId = getIdx(['客戶編號', '會員編號']);
+      const idxSrvId = getIdx(['交易編號', '服務編號', '單號']);
+      const idxIdFallback = getIdx(['編號', 'ID']); 
+      
+      const idxName = getIdx(['姓名', '顧客姓名']);
+      const idxDate = getIdx(['服務日期', '日期', '造訪']);
+      const idxPrice = getIdx(['消費總額', '金額', '消費']);
+      const idxSrv = getIdx(['服務項目', '項目', '服務']); 
+      const idxRetail = getIdx(['零售產品', '產品']);
+      const idxFormula = getIdx(['化學配方', '配方']);
+      const idxNotes = getIdx(['備註與建議', '一般備註', '備註', '建議']);
+      const idxStylist = getIdx(['主理設計師', '設計師']);
+      const idxGender = getIdx(['性別']);
+      const idxLang = getIdx(['語言']);
+      const idxPhone = getIdx(['聯絡電話', '電話', '聯絡方式', '聯絡']);
+      const idxSource = getIdx(['客源狀態', '客源', '來源']);
+      const idxPhoto = getIdx(['照片連結', '照片']);
+
+      const newRecords = [];
+      for(let i = headerRowIdx + 1; i < rows.length; i++) {
+          const row = rows[i];
+          if(!row[idxName] || !row[idxName].trim()) continue;
+
+          let finalSrvId = generateServiceId();
+          let finalCusId = '';
+
+          if (idxSrvId > -1 && row[idxSrvId]) {
+              finalSrvId = row[idxSrvId].trim().toUpperCase();
+          } else if (idxIdFallback > -1 && row[idxIdFallback] && (row[idxIdFallback].toUpperCase().startsWith('S') || row[idxIdFallback].toUpperCase().startsWith('R'))) {
+              finalSrvId = row[idxIdFallback].trim().toUpperCase();
+          }
+
+          if (idxCusId > -1 && row[idxCusId]) {
+              finalCusId = row[idxCusId].trim().toUpperCase();
+          } else if (idxIdFallback > -1 && row[idxIdFallback] && row[idxIdFallback].toUpperCase().startsWith('C')) {
+              finalCusId = row[idxIdFallback].trim().toUpperCase();
+          }
+
+          newRecords.push({
+              serviceId: finalSrvId,
+              customerId: finalCusId, 
+              firstName: row[idxName].trim(),
+              date: (idxDate > -1 && row[idxDate]) ? formatImportDate(row[idxDate].trim()) : new Date().toISOString().split('T')[0],
+              price: isProfileSheet ? '0' : ((idxPrice > -1 && row[idxPrice]) ? String(row[idxPrice]).replace(/[^0-9.]/g, '') : '0'),
+              services: isProfileSheet ? '建立檔案' : ((idxSrv > -1 && row[idxSrv]) ? row[idxSrv].trim() : '系統匯入'),
+              retailItems: (idxRetail > -1 && row[idxRetail]) ? row[idxRetail].trim() : '',
+              formula: (idxFormula > -1 && row[idxFormula]) ? row[idxFormula].trim() : '',
+              notes: (idxNotes > -1 && row[idxNotes]) ? row[idxNotes].trim() : '',
+              photoLink: (idxPhoto > -1 && row[idxPhoto]) ? row[idxPhoto].trim() : '',
+              stylist: (idxStylist > -1 && row[idxStylist] && row[idxStylist].trim()) ? row[idxStylist].trim() : 'Others',
+              gender: (idxGender > -1 && row[idxGender]) ? (row[idxGender].includes('男') || row[idxGender] === 'M' ? 'Male' : 'Female') : 'Female',
+              language: (idxLang > -1 && row[idxLang]) ? (row[idxLang].includes('EN') ? 'EN' : 'CN') : 'CN',
+              phone: (idxPhone > -1 && row[idxPhone]) ? row[idxPhone].trim() : '',
+              paymentMethod: 'Others',
+              customerSource: (idxSource > -1 && row[idxSource]) ? row[idxSource].trim() : 'CSV 匯入',
+              isProfileOnly: isProfileSheet, 
+              timestamp: new Date().toISOString()
+          });
+      }
+
+      let currentMaxId = getNextCustomerId(historyRecords);
+      const nameToIdMap = {};
+      
+      historyRecords.forEach(r => { 
+        if (r.customerId && r.firstName) nameToIdMap[r.firstName.trim().toLowerCase()] = r.customerId; 
+      });
+
+      newRecords.forEach(r => {
+          const lowerName = r.firstName.toLowerCase();
+          if (r.customerId) {
+              nameToIdMap[lowerName] = r.customerId; 
+          } else {
+              if (nameToIdMap[lowerName]) {
+                  r.customerId = nameToIdMap[lowerName]; 
+              } else {
+                  r.customerId = currentMaxId;
+                  nameToIdMap[lowerName] = currentMaxId;
+                  const num = parseInt(currentMaxId.replace('C', ''), 10) || 0;
+                  currentMaxId = `C${String(num + 1).padStart(4, '0')}`;
+              }
+          }
+      });
+
+      setHistoryRecords(prev => [...newRecords, ...prev]);
+      triggerNotification(`✅ 成功匯入 ${newRecords.length} 筆資料！${isProfileSheet ? '(客戶主檔)' : '(交易明細)'}`);
+      setImportInput('');
+  };
+
+  const handleFetchCSV = async (url) => {
+      if (!url) return;
+      try {
+          let fetchUrl = url;
+          if(url.includes('docs.google.com/spreadsheets')) {
+              const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+              if(match) fetchUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
+          }
+          const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fetchUrl)}`);
+          const text = await res.text();
+          if(text.includes('<html') || text.trim() === '') {
+              triggerNotification('❌ 抓取失敗，請確認 Sheet 權限設為「知道連結的人均可檢視」');
+          } else {
+              processCSVImport(text);
+          }
+      } catch(e) {
+          triggerNotification('❌ 網路阻擋，請使用最穩定的「貼上 CSV」模式。');
+      }
+  };
+
+  const handleJSONImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    playAudioFeedback('click');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        if (Array.isArray(importedData)) {
+          setHistoryRecords(prev => {
+            const existingIds = new Set(prev.map(r => r.serviceId));
+            const newRecords = importedData
+                .map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-IMP-${Date.now()}-${i}` })
+                .filter(r => !existingIds.has(r.serviceId));
+            return [...newRecords, ...prev];
+          });
+          triggerNotification(`✅ 成功還原資料！`);
+        } else throw new Error('Invalid format');
+      } catch (err) {
+        triggerNotification(`❌ JSON 格式不符。`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = null; 
+  };
+
+  const handleCRMCSVExport = () => { 
+    playAudioFeedback('click');
+    const headers = ['客戶編號', '姓名', '性別', '語言', '電話', 'Email', 'eDM同意', '客源', '介紹人', '推薦過幾人', '興趣需求', '總消費', '到店次數', '最新造訪', '偏好設計師', '配方與備註'];
+    const csvRows = [headers.join(',')];
+    crmProfiles.forEach(p => {
+        const safeNotes = (p.latestFormula || p.preferences).replace(/"/g, '""');
+        const safeInterests = (p.interests || []).join(', ').replace(/"/g, '""');
+        const referrer = p.visits.find(v => v.referredBy)?.referredBy || '';
+        const row = [ p.customerId, p.fullName, p.gender, p.language, `"${p.phone}"`, `"${p.email}"`, p.edmConsent, p.source, `"${referrer}"`, p.referralsMade, `"${safeInterests}"`, p.totalSpent, p.visitCount, p.latestVisitDate, p.preferredStylist, `"${safeNotes}"` ];
+        csvRows.push(row.join(','));
+    });
+    const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Headline_CRM_Profiles_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleTransactionCSVExport = () => { 
+    playAudioFeedback('click');
+    const headers = ['交易編號', '服務日期', '客戶編號', '姓名', '主理設計師', '客源', '介紹人', '服務項目', '零售產品', '消費總額', '支付方式', '化學配方', '備註與建議', '照片連結'];
+    const csvRows = [headers.join(',')];
+    historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
+        const safeServices = (r.services || '').replace(/"/g, '""');
+        const safeRetail = (r.retailItems || '').replace(/"/g, '""');
+        const safeFormula = (r.formula || '').replace(/"/g, '""');
+        const safeNotes = (r.notes || '').trim().replace(/"/g, '""');
+        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), r.stylist, r.customerSource, `"${r.referredBy || ''}"`, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
+        csvRows.push(row.join(','));
+    });
+    const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Headline_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleJSONExport = () => {
+    playAudioFeedback('click');
+    const dataStr = JSON.stringify(historyRecords, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Headline_System_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    triggerNotification('✅ 系統備份檔案已成功下載！');
+  };
+
+  const handleCloudRefresh = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    try {
+      const res = await fetch(driveApiUrl);
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        const validData = data.filter(r => r && r.serviceId);
+        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setHistoryRecords(validData);
+        playAudioFeedback('success');
+        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
+      } else throw new Error('Format issue');
+    } catch(e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleCloudBackup = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
+    if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    triggerNotification('⏳ 雲端同步備份中，請稍候...');
+    try {
+      const res = await fetch(driveApiUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      });
+      const result = await res.json();
+      if (result.status === 'success') {
+        playAudioFeedback('success');
+        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
+      } else throw new Error(result.message);
+    } catch (e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 備份失敗，請確認 API 網址正確且具有執行權限。');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleCloudRestore = async () => { handleCloudRefresh(); };
+  const handleResetDatabase = () => { setHistoryRecords([]); setShowResetConfirm(false); triggerNotification('⚠️ 系統已清空。'); };
+
+  const handleNameSearchInput = (e) => {
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, firstName: val }));
+    if (val.trim().length > 0) {
+      const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val)));
+      setNameSuggests(matches);
+      setShowNameSuggest(matches.length > 0);
+    } else {
+      setShowNameSuggest(false);
+      setFormData(prev => ({ ...prev, customerId: '' })); 
+    }
+  };
+
+  const handleReferralSearchInput = (e) => {
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, referredBy: val }));
+    if (val.trim().length > 0) {
+      const matches = crmProfiles.filter(p => 
+          String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || 
+          (p.phone && String(p.phone).includes(val)) ||
+          (p.customerId && String(p.customerId).toLowerCase().includes(val.toLowerCase()))
+      );
+      setReferralSuggests(matches);
+      setShowReferralSuggest(matches.length > 0);
+    } else {
+      setShowReferralSuggest(false);
+    }
+  };
+
   const showBirthday = formData.clientType === 'New' || (!formData.birthMonth && formData.clientType === 'Repeated');
-  
   const currentProfile = useMemo(() => {
      return formData.customerId ? crmProfiles.find(p => p.customerId === formData.customerId) : null;
   }, [formData.customerId, crmProfiles]);
@@ -855,17 +1149,19 @@ export default function App() {
         </div>
       )}
 
+      {/* HEADER */}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8">
           <div className="flex flex-col items-start justify-center select-none pt-1">
             <h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.2.0 Pro</span>
+                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.3 Pro</span>
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
           <div className="flex space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
             {[
-              { id: 'checkout', icon: Icons.Gift, label: 'CHECK OUT' },
+              { id: 'scheduler', icon: Icons.Calendar, label: '預約排程' },
+              { id: 'checkout', icon: Icons.Gift, label: '現場結帳' },
               { id: 'crm', icon: Icons.User, label: '客戶資料庫' },
               { id: 'dashboard', icon: Icons.Chart, label: '數據報表' },
               { id: 'datahub', icon: Icons.Database, label: '資料中心' }
@@ -880,18 +1176,282 @@ export default function App() {
             ))}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <button onClick={handleCloudRefresh} disabled={isSyncing} 
-                  className={`p-3.5 rounded-2xl text-white transition-all shadow-sm flex items-center gap-1 ${isSyncing ? 'animate-spin opacity-50' : 'hover:opacity-80 scale-110'}`} 
-                  style={{ backgroundColor: activeTheme.hex }} title="重新整理雲端最新資料">
-             <Icons.Refresh />
-          </button>
-        </div>
       </header>
 
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
         
-        {        activeTab === 'checkout' && (
+        {/* ==========================================
+            TAB 0: SCHEDULER
+            ========================================== */}
+        {activeTab === 'scheduler' && (
+          <div className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300 h-full flex flex-col">
+             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col h-full">
+                <div className="flex justify-between items-center mb-6 border-b-2 border-gray-100 pb-5">
+                   <div>
+                      <h2 className="text-4xl font-black flex items-center space-x-4 text-[#4A2511]">
+                         <div className="w-3 h-12 rounded-full" style={{ backgroundColor: activeTheme.hex }}></div>
+                         <span>預約排程 (Scheduler)</span>
+                      </h2>
+                   </div>
+                   <div className="flex items-center gap-4">
+                      <div className="flex bg-[#F6EFE9] rounded-2xl p-1 h-[48px] mr-2">
+                        <select value={schedFilterStylist} onChange={e => setSchedFilterStylist(e.target.value)} className="bg-transparent font-bold text-[#4A2511] px-4 focus:outline-none cursor-pointer border-r border-[#E8DCC8]">
+                            <option value="All">All Stylists</option>
+                            {stylists.filter(s=>s!=='Others').map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('day'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'day' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>日</button>
+                        <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('week'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'week' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>週</button>
+                        <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('month'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'month' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>月</button>
+                      </div>
+                      <button onClick={() => { playAudioFeedback('click'); fetchCalendarEvents(); }} 
+                        className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors shadow-sm">
+                         <Icons.Refresh className={isCalendarLoading ? "animate-spin" : ""} /> <span>同步日曆</span>
+                      </button>
+                      <button onClick={() => { playAudioFeedback('click'); setSchedAddEditModal({ date: schedSelectedDate.toLocaleDateString('en-CA'), time: '12:00', duration: 60, stylist: schedFilterStylist === 'All' ? 'Man' : schedFilterStylist, clientName: '', service: '', phone: '', notes: '' }); }} 
+                        className="bg-[#8B5A2B] text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#6D3A14] transition-colors shadow-sm">
+                         <Icons.Plus /> <span>新增預約</span>
+                      </button>
+                   </div>
+                </div>
+
+                {(schedViewMode === 'day' || schedViewMode === 'month') && (
+                   <div className="flex justify-between items-center mb-6 bg-[#F6EFE9]/50 p-4 rounded-2xl border border-[#E8DCC8]">
+                      <button onClick={() => {
+                          const d = new Date(schedSelectedDate);
+                          if(schedViewMode==='day') d.setDate(d.getDate() - 1);
+                          else d.setMonth(d.getMonth() - 1);
+                          setSchedSelectedDate(d);
+                      }} className="p-2 hover:bg-white rounded-xl transition-colors text-[#4A2511] font-bold flex items-center"><Icons.ChevronLeft /> {schedViewMode==='day' ? '前一天' : '上個月'}</button>
+                      <h3 className="text-2xl font-black text-[#8B5A2B]">
+                          {schedViewMode==='day' ? schedSelectedDate.toLocaleDateString('zh-HK', { month: 'long', day: 'numeric', weekday: 'long' }) : schedSelectedDate.toLocaleDateString('zh-HK', { year:'numeric', month: 'long' })}
+                      </h3>
+                      <button onClick={() => {
+                          const d = new Date(schedSelectedDate);
+                          if(schedViewMode==='day') d.setDate(d.getDate() + 1);
+                          else d.setMonth(d.getMonth() + 1);
+                          setSchedSelectedDate(d);
+                      }} className="p-2 hover:bg-white rounded-xl transition-colors text-[#4A2511] font-bold flex items-center">{schedViewMode==='day' ? '後一天' : '下個月'} <Icons.ChevronRight /></button>
+                   </div>
+                )}
+
+                <div className="flex-1 overflow-y-auto border-2 border-[#E8DCC8] rounded-2xl bg-gray-50 custom-scrollbar relative flex flex-col">
+                   {/* DAY VIEW */}
+                   {schedViewMode === 'day' && (() => {
+                       const visibleStylists = schedFilterStylist === 'All' ? stylists.filter(s=>s!=='Others') : [schedFilterStylist];
+                       const isToday = schedSelectedDate.toDateString() === currentTime.toDateString();
+                       const currentHour = currentTime.getHours();
+                       const currentMin = currentTime.getMinutes();
+                       const showTimeLine = isToday && currentHour >= 10 && currentHour < 21;
+                       const timeLineTop = showTimeLine ? ((currentHour - 10) * 64) + (currentMin / 60) * 64 : -100;
+
+                       return (
+                         <div className="flex min-w-[800px] relative">
+                            {showTimeLine && (
+                                <div className="absolute left-24 right-0 border-b-[3px] border-red-500 z-30 pointer-events-none flex items-center" style={{ top: `${timeLineTop + 64}px` }}>
+                                    <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full absolute -left-12">{currentHour}:{currentMin.toString().padStart(2,'0')}</div>
+                                    <div className="w-2 h-2 rounded-full bg-red-500 absolute -left-1"></div>
+                                </div>
+                            )}
+                            
+                            <div className="w-24 shrink-0 bg-[#F6EFE9] border-r-2 border-[#E8DCC8] flex flex-col sticky left-0 z-20">
+                               <div className="h-16 border-b-2 border-[#E8DCC8] bg-[#F6EFE9] sticky top-0 z-30"></div>
+                               {TIME_SLOTS.map((time, i) => (
+                                  <div key={i} className={`h-16 flex items-start justify-end pr-2 pt-1 font-bold text-gray-400 text-sm ${i % 2 === 0 ? 'border-b border-[#E8DCC8]' : 'border-b-2 border-[#E8DCC8]'}`}>{i % 2 === 0 ? time : ''}</div>
+                               ))}
+                            </div>
+                            {visibleStylists.map(stylist => {
+                               const dateStr = schedSelectedDate.toLocaleDateString('en-CA');
+                               const dayEvents = calendarEvents.filter(e => {
+                                  const eDate = new Date(e.startTime);
+                                  if(isNaN(eDate.getTime())) return false;
+                                  return e.stylist === stylist && eDate.toLocaleDateString('en-CA') === dateStr;
+                               });
+                               return (
+                                  <div key={stylist} className="flex-1 min-w-[200px] border-r-2 border-[#E8DCC8] relative bg-white">
+                                     <div className="h-16 border-b-2 border-[#E8DCC8] bg-white sticky top-0 z-20 flex items-center justify-center">
+                                        <span className="text-xl font-black px-4 py-1.5 rounded-lg text-white shadow-sm" style={{ backgroundColor: STYLIST_THEMES[stylist].hex }}>{stylist}</span>
+                                     </div>
+                                     {TIME_SLOTS.map((_, i) => (<div key={i} className={`h-16 w-full ${i % 2 === 0 ? 'border-b border-gray-50' : 'border-b-2 border-gray-100'}`}></div>))}
+                                     {dayEvents.map((evt, i) => {
+                                        const eStart = new Date(evt.startTime);
+                                        const hour = eStart.getHours();
+                                        const min = eStart.getMinutes();
+                                        if (hour < 10 || hour >= 21) return null;
+                                        const topPx = ((hour - 10) * 64) + (min / 60) * 64; 
+                                        
+                                        let durationMins = Math.round((new Date(evt.endTime) - new Date(evt.startTime)) / 60000);
+                                        if (!durationMins || durationMins <= 0) durationMins = 60;
+                                        const heightPx = Math.max((durationMins / 60) * 64 - 4, 30); 
+                                        
+                                        const parts = evt.title.split('|');
+                                        let clientName = parts[0]?.trim() || evt.title;
+                                        let service = parts[1]?.trim() || '';
+                                        let phone = '';
+                                        let notes = evt.description || '';
+                                        if (notes.includes('Phone:')) {
+                                            const splitNotes = notes.split('\n');
+                                            phone = splitNotes[0].replace('Phone:', '').trim();
+                                            notes = splitNotes.slice(1).join('\n');
+                                        }
+                                        const parsedApt = { id: evt.id, stylist, clientName, service, time: `${hour}:${min.toString().padStart(2,'0')}`, duration: durationMins, date: dateStr, phone, notes };
+                                        
+                                        return (
+                                           <div key={i} onClick={() => { playAudioFeedback('click'); setSchedDetailModal(parsedApt); }} className="absolute left-1 right-1 rounded-xl p-3 shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border-2 z-10" style={{ top: `${topPx + 66}px`, height: `${heightPx}px`, backgroundColor: STYLIST_THEMES[stylist].light, borderColor: STYLIST_THEMES[stylist].hex, borderLeftWidth: '6px' }}>
+                                               <div className="flex justify-between items-start mb-1">
+                                                  <span className="font-black text-[#4A2511] text-base leading-tight truncate">{clientName}</span>
+                                                  <span className="text-xs font-bold text-[#8B5A2B] bg-white/80 px-2 py-0.5 rounded shadow-sm">{parsedApt.time}</span>
+                                               </div>
+                                               <div className="text-xs font-bold text-gray-700 truncate mb-1">{service}</div>
+                                               {heightPx > 60 && phone && <div className="text-[10px] text-gray-500 font-mono">📞 {phone}</div>}
+                                           </div>
+                                        );
+                                     })}
+                                  </div>
+                               )
+                            })}
+                         </div>
+                       );
+                   })()}
+
+                   {/* WEEK VIEW */}
+                   {schedViewMode === 'week' && (() => {
+                       const visibleStylists = schedFilterStylist === 'All' ? stylists.filter(s=>s!=='Others') : [schedFilterStylist];
+                       return (
+                         <table className="w-full text-left border-collapse min-w-[800px] bg-white">
+                            <thead className="bg-[#F6EFE9] sticky top-0 z-10 shadow-sm border-b-2 border-[#E8DCC8]">
+                              <tr>
+                                 <th className="p-4 border-r border-[#E8DCC8] font-black text-[#4A2511] w-32 text-center text-lg">日期</th>
+                                 {visibleStylists.map(stylist => <th key={stylist} className="p-4 border-r border-[#E8DCC8] font-black text-center text-xl" style={{ color: STYLIST_THEMES[stylist].hex }}>{stylist}</th>)}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Array.from({length: 7}, (_, i) => {
+                                 const d = new Date(); d.setDate(d.getDate() + i);
+                                 const dateString = d.toLocaleDateString('en-CA'); 
+                                 return (
+                                    <tr key={dateString} className="hover:bg-gray-50">
+                                      <td className="p-4 border-b border-r border-[#E8DCC8] align-top text-center"><div className="font-black text-xl text-[#4A2511]">{dateString.slice(5)}</div><div className="text-xs font-bold text-gray-400 mt-1">{d.toLocaleDateString('zh-HK', { weekday: 'short' })}</div></td>
+                                      {visibleStylists.map(stylist => {
+                                         const dayEvents = calendarEvents.filter(e => {
+                                             const eD = new Date(e.startTime);
+                                             return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateString && e.stylist === stylist;
+                                         }).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+                                         
+                                         return (
+                                            <td key={stylist} className="p-3 border-b border-r border-[#E8DCC8] align-top">
+                                              <div className="space-y-3">
+                                                 {dayEvents.map((evt, j) => {
+                                                    const eDate = new Date(evt.startTime);
+                                                    const timeString = eDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                                                    const parts = evt.title.split('|');
+                                                    const clientName = parts[0]?.trim() || evt.title;
+                                                    const service = parts[1]?.trim() || '';
+                                                    let phone = '';
+                                                    let notes = evt.description || '';
+                                                    if (notes.includes('Phone:')) {
+                                                        const splitNotes = notes.split('\n');
+                                                        phone = splitNotes[0].replace('Phone:', '').trim();
+                                                        notes = splitNotes.slice(1).join('\n');
+                                                    }
+                                                    return (
+                                                       <div key={j} onClick={() => setSchedDetailModal({ id: evt.id, stylist, clientName, service, time: timeString, duration: 60, date: dateString, phone, notes })} className="group relative bg-white border p-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer" style={{ borderColor: STYLIST_THEMES[stylist].light, borderLeftWidth: '6px', borderLeftColor: STYLIST_THEMES[stylist].hex }}>
+                                                          <div className="flex justify-between items-start"><span className="font-black text-[#4A2511] text-base">{clientName}</span><span className="text-xs font-bold text-[#8B5A2B] bg-[#F6EFE9] px-2 py-0.5 rounded-md">{timeString}</span></div>
+                                                          <div className="text-xs font-bold text-gray-500 mt-1 truncate">{service}</div>
+                                                       </div>
+                                                    );
+                                                 })}
+                                              </div>
+                                            </td>
+                                         )
+                                      })}
+                                    </tr>
+                                 );
+                              })}
+                            </tbody>
+                         </table>
+                       );
+                   })()}
+
+                   {/* MONTH VIEW */}
+                   {schedViewMode === 'month' && (() => {
+                       const year = schedSelectedDate.getFullYear();
+                       const month = schedSelectedDate.getMonth();
+                       const firstDay = new Date(year, month, 1).getDay();
+                       const daysInMonth = new Date(year, month + 1, 0).getDate();
+                       const days = [];
+                       for (let i = 0; i < firstDay; i++) days.push(null);
+                       for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+                       
+                       const weeks = [];
+                       let currentWeek = [];
+                       days.forEach((day, i) => {
+                           currentWeek.push(day);
+                           if ((i + 1) % 7 === 0 || i === days.length - 1) {
+                               while(currentWeek.length < 7) currentWeek.push(null);
+                               weeks.push(currentWeek);
+                               currentWeek = [];
+                           }
+                       });
+
+                       const visibleStylists = schedFilterStylist === 'All' ? stylists.filter(s=>s!=='Others') : [schedFilterStylist];
+
+                       return (
+                           <div className="flex-1 flex flex-col bg-gray-50">
+                               <div className="grid grid-cols-7 border-b border-[#E8DCC8] bg-[#F6EFE9]">
+                                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                                       <div key={d} className="p-3 text-center font-bold text-gray-500 text-sm uppercase">{d}</div>
+                                   ))}
+                               </div>
+                               <div className="flex-1 grid grid-cols-7 grid-rows-5 bg-white">
+                                   {weeks.map((week, wIdx) => week.map((day, dIdx) => {
+                                       if (!day) return <div key={`empty-${wIdx}-${dIdx}`} className="border-b border-r border-gray-100 bg-gray-50/50 p-2"></div>;
+                                       
+                                       const dateStr = day.toLocaleDateString('en-CA');
+                                       const isToday = dateStr === new Date().toLocaleDateString('en-CA');
+                                       const dayEvents = calendarEvents.filter(e => {
+                                           const eD = new Date(e.startTime);
+                                           return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateStr && visibleStylists.includes(e.stylist);
+                                       });
+                                       
+                                       return (
+                                           <div key={dateStr} className={`border-b border-r border-gray-100 p-2 overflow-hidden flex flex-col ${isToday ? 'bg-[#F6EFE9]/30' : ''}`}>
+                                               <div className={`text-sm font-bold mb-1 w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-[#8B5A2B] text-white' : 'text-gray-500'}`}>
+                                                   {day.getDate()}
+                                               </div>
+                                               <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-1">
+                                                   {dayEvents.slice(0, 5).map((evt, i) => {
+                                                       const eTime = new Date(evt.startTime).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:false});
+                                                       const cName = (evt.title.split('|')[0] || '').trim();
+                                                       return (
+                                                           <div key={i} className="text-[10px] truncate px-1.5 py-0.5 rounded font-bold cursor-pointer" 
+                                                                style={{ backgroundColor: STYLIST_THEMES[evt.stylist].light, color: STYLIST_THEMES[evt.stylist].hex }}
+                                                                onClick={() => {
+                                                                    const parts = evt.title.split('|');
+                                                                    setSchedDetailModal({ id: evt.id, stylist: evt.stylist, clientName: cName, service: parts[1]?.trim()||'', time: eTime, duration:60, date: dateStr, notes: evt.description });
+                                                                }}>
+                                                               {eTime} {cName}
+                                                           </div>
+                                                       );
+                                                   })}
+                                                   {dayEvents.length > 5 && <div className="text-[10px] text-gray-400 font-bold px-1">+ {dayEvents.length - 5} more</div>}
+                                               </div>
+                                           </div>
+                                       );
+                                   }))}
+                               </div>
+                           </div>
+                       );
+                   })()}
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB 1: CHECKOUT FORM
+            ========================================== */}
+        {activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className={`grid grid-cols-1 ${hasChemicalService && !hideFormulaPanel ? 'xl:grid-cols-12' : ''} gap-6 transition-all duration-500`}>
               <div className={`bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col ${hasChemicalService && !hideFormulaPanel ? 'xl:col-span-7' : 'xl:col-span-12'}`}>
@@ -959,7 +1519,6 @@ export default function App() {
                          </select>
                        )}
                      </div>
-                     {/* Referral Auto-Suggest Input Field */}
                      {formData.clientType === 'New' && formData.sourceDetail === 'Referral' && (
                          <div className="mt-1 animate-in slide-in-from-top-1 relative">
                              <input type="text" placeholder="輸入介紹人姓名或電話搜尋..." 
@@ -1016,7 +1575,16 @@ export default function App() {
                              </button>
                          )}
                      </label>
-                     <input type="email" value={formData.email} onClick={()=>playAudioFeedback('click')} onChange={(e) => handleInputChange('email', e.target.value)} placeholder="example@email.com" className="w-full bg-emerald-50/50 rounded-xl py-2.5 px-3 font-bold outline-none focus:bg-white border border-emerald-200 focus:border-emerald-500 h-[46px] transition-colors" />
+                     {!showEmailField && !formData.email ? (
+                        <button type="button" onClick={() => setShowEmailField(true)} className="w-full bg-[#F6EFE9] border border-transparent rounded-xl py-2.5 px-3 text-sm font-bold text-gray-400 hover:bg-[#E8DCC8] hover:text-[#8B5A2B] transition-colors h-[46px] flex items-center justify-center">
+                           + 新增 Email
+                        </button>
+                     ) : (
+                        <div className="relative">
+                           <input type="email" value={formData.email} onClick={()=>playAudioFeedback('click')} onChange={(e) => handleInputChange('email', e.target.value)} placeholder="example@email.com" className="w-full bg-emerald-50/50 rounded-xl py-2.5 px-3 font-bold outline-none focus:bg-white border border-emerald-200 focus:border-emerald-500 h-[46px] transition-colors" />
+                           <button type="button" onClick={() => { setShowEmailField(false); handleInputChange('email', ''); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:bg-gray-200 rounded-full transition-colors"><Icons.X className="w-4 h-4" /></button>
+                        </div>
+                     )}
                   </div>
                   {showBirthday && (
                      <div className="col-span-6 md:col-span-2">
@@ -1139,7 +1707,7 @@ export default function App() {
                 <div className="mt-5">
                   <button type="button" onClick={() => { playAudioFeedback('click'); setShowNotes(!showNotes); }} 
                           className="w-full flex items-center justify-between py-4 px-6 bg-gray-50 border border-gray-200 rounded-2xl text-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
-                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結與備註'}</span></span>
+                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結、備註與下次建議'}</span></span>
                       {showNotes ? <Icons.Minus /> : <Icons.Plus />}
                   </button>
                   
@@ -1157,6 +1725,10 @@ export default function App() {
                         <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">一般備註 (General Notes)</label>
                         <textarea rows={2} placeholder="輸入私密備註..." onClick={()=>playAudioFeedback('click')} value={formData.notes} onChange={(e) => handleInputChange('notes', e.target.value)}
                             className="w-full bg-white rounded-2xl p-4 text-xl font-semibold outline-none border" />
+                        
+                        <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">下次建議 (Next Suggestion)</label>
+                        <input type="text" placeholder="例: 4週後來修剪" value={formData.nextSuggest} onChange={(e) => handleInputChange('nextSuggest', e.target.value)}
+                            className="w-full bg-white border-transparent rounded-2xl py-3 px-4 text-xl font-semibold focus:outline-none focus:ring-1" />
                     </div>
                   )}
                 </div>
@@ -1180,7 +1752,6 @@ export default function App() {
                   <div className="mb-6 flex-1 flex flex-col">
                     <div className="flex justify-between items-end mb-3">
                        <label className="block text-sm font-bold uppercase tracking-wider text-gray-500">完整配方與操作紀錄</label>
-                       {/* Auto-fill Formula Button */}
                        {currentProfile?.latestFormula && (
                            <button type="button" onClick={() => { playAudioFeedback('success'); handleInputChange('formula', currentProfile.latestFormula); triggerNotification('✅ 已成功帶入上次配方'); }} 
                                    className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shadow-sm">
@@ -1212,7 +1783,10 @@ export default function App() {
           </form>
         )}
 
-        {        activeTab === 'crm' && (
+        {/* ==========================================
+            TAB 2: CRM DIRECTORY
+            ========================================== */}
+        {activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6 animate-in fade-in duration-300">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b-2 border-gray-100 pb-5">
@@ -1419,7 +1993,9 @@ export default function App() {
                             <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent}</span></div>
                             <div>
                                <span className="text-sm text-gray-500 uppercase font-bold block mb-1">最近造訪</span>
-                               <span className="font-black text-[#4A2511] text-base">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : `${client.latestVisitDate} (${client.daysSince} 天前)`}</span>
+                               <span className="font-black text-[#4A2511] text-base">
+                                 {client.latestVisitDate === '1970-01-01' ? '無紀錄' : <>{client.latestVisitDate} <span className="text-xs font-bold text-gray-400 ml-1">({client.daysSince} 天前)</span></>}
+                               </span>
                             </div>
                             <div className="col-span-2">
                                 <span className="text-sm text-gray-500 uppercase font-bold block mb-1">Last Service</span>
@@ -1478,6 +2054,9 @@ export default function App() {
           </div>
         )}
 
+        {/* ==========================================
+            TAB 3: DASHBOARD
+            ========================================== */}
         {activeTab === 'dashboard' && (
           <div className="max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1493,25 +2072,20 @@ export default function App() {
                      {p === 'day' ? '今日' : p === 'week' ? '本週' : p === 'month' ? '本月' : '全年'}
                    </button>
                  ))}
-                 <button onClick={() => { playAudioFeedback('click'); setDashboardPeriod('custom'); }}
-                     className={`px-6 rounded-xl text-xl font-bold transition-all ${dashboardPeriod === 'custom' ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}
-                     style={dashboardPeriod === 'custom' ? { backgroundColor: activeTheme.hex } : {}}>
-                     自訂
-                 </button>
                </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">平均客單價</h3>
                    <p className="text-4xl font-black text-[#4A2511]">${dashboardData.avgSpending}</p>
                </div>
                <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2 flex justify-between">
-                     <span>新客佔比</span>
+                     <span>新舊客佔比</span>
                      <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded flex items-center"><Icons.AlertTriangle className="w-3 h-3 mr-1"/> 流失預警: {crmProfiles.filter(p=>p.daysSince>90 && p.visitCount>0).length} 人</span>
                    </h3>
-                   <p className="text-4xl font-black text-[#4A2511]"><span className="text-emerald-600">{dashboardData.newPct}%</span> <span className="text-amber-600 ml-2">{dashboardData.retentionPct}%(舊)</span></p>
+                   <p className="text-4xl font-black text-[#4A2511]"><span className="text-emerald-600">{dashboardData.retentionPct}%</span> <span className="text-amber-600 ml-2">{dashboardData.newPct}%</span></p>
                </div>
                <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">零售產品佔比 (Retail)</h3>
@@ -1520,17 +2094,6 @@ export default function App() {
                <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">中英客佔比 (EN/CN)</h3>
                    <p className="text-4xl font-black text-[#4A2511]">{dashboardData.enPct}% / {dashboardData.cnPct}%</p>
-               </div>
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm relative overflow-hidden">
-                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">Chemical 服務佔比</h3>
-                   <div className="flex items-end gap-2 mb-2">
-                       <p className={`text-4xl font-black ${dashboardData.chemPct >= 30 ? 'text-emerald-600' : dashboardData.chemPct < 25 ? 'text-orange-500' : 'text-[#4A2511]'}`}>{dashboardData.chemPct}%</p>
-                       <span className="text-xs text-gray-400 font-bold pb-1">/ 染燙護</span>
-                   </div>
-                   <div className="w-full bg-gray-100 h-2 rounded-full mt-2 relative">
-                       <div className="absolute top-0 bottom-0 left-0 rounded-full transition-all duration-1000" style={{ width: `${dashboardData.chemPct}%`, backgroundColor: dashboardData.chemPct >= 30 ? '#10b981' : dashboardData.chemPct < 25 ? '#f97316' : '#8B5A2B' }}></div>
-                       <div className="absolute top-[-5px] bottom-[-5px] w-0.5 bg-gray-400" style={{ left: '30%' }} title="Target: 30%"></div>
-                   </div>
                </div>
             </div>
             
@@ -1567,64 +2130,42 @@ export default function App() {
                 </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
-              
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-xl font-black mb-6 text-center text-[#4A2511]">設計師業績佔比</h3>
+                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈 (受上方期間連動)</h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={60}/>
-                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={30}>
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 15, fontWeight: 'bold' }} width={80}/>
+                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={40}>
                         {dashboardData.stylistChart.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-lg font-bold text-gray-300">尚無數據</div>}
+                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
               </div>
 
               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-xl font-black mb-6 text-center text-[#4A2511]">熱門服務排行</h3>
+                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">熱門服務排行</h3>
                 {dashboardData.serviceChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+                    <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 11, fontWeight: 'bold' }} width={120}/>
-                      <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="count" fill={activeTheme.hex} radius={[0, 12, 12, 0]} barSize={30} />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={160}/>
+                      <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                      <Bar dataKey="count" fill={activeTheme.hex} radius={[0, 12, 12, 0]} barSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-lg font-bold text-gray-300">尚無數據</div>}
+                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
               </div>
-
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10"><Icons.Chart className="w-20 h-20" /></div>
-                <h3 className="text-xl font-black mb-2 text-center text-[#4A2511]">離峰時段分析 (客流量)</h3>
-                <p className="text-xs text-center text-gray-400 font-bold mb-6">找出最空閒的星期幾，精準推播優惠！</p>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dashboardData.weeklyTraffic} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8DCC8" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8B5A2B', fontSize: 12, fontWeight: 'bold' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8B5A2B', fontSize: 12 }} />
-                    <Tooltip cursor={{fill: '#F6EFE9'}} contentStyle={{borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)'}} />
-                    <Bar dataKey="客數" fill="#8B5A2B" radius={[8, 8, 0, 0]} barSize={25}>
-                       {dashboardData.weeklyTraffic.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.客數 === Math.min(...dashboardData.weeklyTraffic.map(d=>d.客數)) && entry.客數 > 0 ? '#f97316' : '#8B5A2B'} />
-                        ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
             </div>
 
-            {/* TRANSACTION LIST SECTION */}
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                    <h3 className="text-2xl font-black text-[#4A2511]">交易明細總表 (可點擊編輯)</h3>
@@ -1677,6 +2218,9 @@ export default function App() {
           </div>
         )}
 
+        {/* ==========================================
+            TAB 4: DATA HUB
+            ========================================== */}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
                <div className="bg-white border p-10 rounded-3xl shadow-xl max-w-sm w-full text-center">
@@ -1700,7 +2244,6 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                
                 <div className="flex flex-col gap-6">
                     <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
                         <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
@@ -1744,7 +2287,6 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-col gap-6">
-                    
                     <div className="bg-[#4A2511] text-white rounded-3xl p-8 shadow-xl">
                         <h3 className="text-xl font-black mb-4 flex items-center gap-2 border-b border-[#6D3A14] pb-3 text-amber-100">
                            <Icons.Check /> <span>資料安全操作指南</span>
@@ -1776,7 +2318,7 @@ export default function App() {
                             <Icons.Upload />
                             <span className="font-bold mt-1">一鍵上傳備份至雲端</span>
                          </button>
-                         <button onClick={handleCloudRefresh} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-colors shadow-lg">
+                         <button onClick={handleCloudRestore} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-colors shadow-lg">
                             <Icons.Download />
                             <span className="font-bold mt-1">從雲端還原至本機</span>
                          </button>
@@ -1816,8 +2358,11 @@ export default function App() {
         )}
       </main>
 
+      {/* ==========================================
+          MODALS & OVERLAYS
+          ========================================== */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-[#4A2511]/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300 border-4 border-[#E8DCC8]">
             <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-amber-200">
               <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
@@ -1836,7 +2381,7 @@ export default function App() {
                  <span className="text-2xl font-black text-gray-700">Google Review</span>
                </div>
                <p className="text-lg text-gray-500 font-bold flex items-center justify-center gap-2 animate-pulse">
-                  ⭐⭐⭐⭐⭐ <span className="text-amber-600">別忘了邀請客人留下好評！</span>
+                 ⭐⭐⭐⭐⭐ <span className="text-amber-600">別忘了邀請客人留下好評！</span>
                </p>
             </div>
             <button onClick={() => { playAudioFeedback('click'); setShowSuccessModal(false); }} className="w-full text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg hover:opacity-90" style={{ backgroundColor: activeTheme.hex }}>完成 (Done)</button>
@@ -2024,12 +2569,227 @@ export default function App() {
             <p className="text-lg text-gray-600 font-bold mb-8">此操作將會清空您的 <strong className="text-red-600">所有客戶資料、交易明細與數據報表</strong>，且 <span className="underline">完全無法復原</span>。<br/><br/>您確定已經做好了 JSON 備份嗎？</p>
             <div className="flex space-x-4">
                <button onClick={() => setShowResetConfirm(false)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">取消，返回安全區</button>
-               <button onClick={() => {
-                  playAudioFeedback('warn');
-                  setHistoryRecords([]);
-                  setShowResetConfirm(false);
-                  triggerNotification('⚠️ 系統已恢復原廠設定，所有資料已清空。');
-               }} className="flex-1 py-4 rounded-xl text-xl font-bold bg-red-600 text-white shadow-lg hover:bg-red-700">我已備份，確認清空</button>
+               <button onClick={handleResetDatabase} className="flex-1 py-4 rounded-xl text-xl font-bold bg-red-600 text-white shadow-lg hover:bg-red-700">我已備份，確認清空</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scheduler Modal: Add/Edit Appointment */}
+      {schedAddEditModal && (
+        <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <form onSubmit={handleSaveCalendarEvent} className="bg-white rounded-[2rem] max-w-lg w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-3xl font-black text-[#4A2511] flex items-center space-x-3">
+                   <Icons.Calendar /> <span>{schedAddEditModal.id ? '編輯預約' : '新增預約'}</span>
+                </h3>
+            </div>
+            
+            <div className="overflow-y-auto custom-scrollbar pr-2 space-y-4 mb-6">
+              
+              {/* Double Booking Warning */}
+              {checkConflict(schedAddEditModal.stylist, schedAddEditModal.date, schedAddEditModal.time, schedAddEditModal.duration, schedAddEditModal.id) && (
+                  <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-xl font-bold flex items-center gap-2 text-sm animate-in fade-in">
+                      <Icons.AlertTriangle /> <span>注意：該時段已有其他預約，強行排入將導致座位超載！</span>
+                  </div>
+              )}
+
+              {!schedAddEditModal.id && (
+                  <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                     <label className="block text-xs font-bold uppercase mb-2 text-yellow-800">⚡ 快速套用預約範本</label>
+                     <select onChange={(e) => {
+                         const tmpl = APPOINTMENT_TEMPLATES.find(t => t.id === e.target.value);
+                         if(tmpl) {
+                             playAudioFeedback('click');
+                             setSchedAddEditModal(prev => ({
+                                 ...prev,
+                                 service: tmpl.service,
+                                 duration: tmpl.duration
+                             }));
+                         }
+                     }} className="w-full bg-white rounded-lg py-2 px-3 font-bold outline-none border focus:border-yellow-500">
+                         <option value="">- 請選擇預約範本 -</option>
+                         {APPOINTMENT_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                     </select>
+                  </div>
+              )}
+
+              <div className="relative">
+                 <label className="block text-sm font-bold uppercase mb-2 text-gray-500">顧客姓名 (可搜尋 CRM 舊客)</label>
+                 <input type="text" required placeholder="搜尋或輸入..." value={schedAddEditModal.clientName} onChange={(e) => {
+                     const val = e.target.value;
+                     setSchedAddEditModal(prev => ({...prev, clientName: val}));
+                     if (val.trim().length > 1) {
+                         const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val)));
+                         setSchedClientMatches(matches);
+                     } else {
+                         setSchedClientMatches([]);
+                     }
+                 }} onBlur={() => setTimeout(() => setSchedClientMatches([]), 200)}
+                        className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+                 
+                 {schedClientMatches.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+                       {schedClientMatches.map(p => (
+                         <div key={p.customerId} onMouseDown={() => {
+                             setSchedAddEditModal(prev => ({...prev, clientName: p.fullName, phone: p.phone || ''}));
+                             setSchedClientMatches([]);
+                         }} className="px-4 py-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
+                           <span className="font-black text-[#4A2511]">{p.fullName}</span>
+                           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{p.phone}</span>
+                         </div>
+                       ))}
+                    </div>
+                 )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                 <div>
+                    <label className="block text-sm font-bold uppercase mb-2 text-gray-500">日期</label>
+                    <input type="date" required value={schedAddEditModal.date} onChange={e => setSchedAddEditModal(prev => ({...prev, date: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-bold uppercase mb-2 text-gray-500">時間</label>
+                    <input type="time" required value={schedAddEditModal.time} onChange={e => setSchedAddEditModal(prev => ({...prev, time: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                   <label className="block text-sm font-bold uppercase mb-2 text-gray-500">設計師</label>
+                   <select value={schedAddEditModal.stylist} onChange={e => setSchedAddEditModal(prev => ({...prev, stylist: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]">
+                     {stylists.filter(s=>s!=='Others').map(s => <option key={s} value={s}>{s}</option>)}
+                   </select>
+                </div>
+                <div>
+                   <label className="block text-sm font-bold uppercase mb-2 text-gray-500">預估時長 (分鐘)</label>
+                   <input type="number" step="30" min="30" required value={schedAddEditModal.duration} onChange={e => setSchedAddEditModal(prev => ({...prev, duration: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+                </div>
+              </div>
+
+              <div>
+                 <label className="block text-sm font-bold uppercase mb-2 text-gray-500">預約項目</label>
+                 <input type="text" placeholder="例: 染燙護" required value={schedAddEditModal.service} onChange={e => setSchedAddEditModal(prev => ({...prev, service: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+              </div>
+
+              <div>
+                 <label className="block text-sm font-bold uppercase mb-2 text-gray-500">聯絡電話</label>
+                 <input type="text" placeholder="選填..." value={schedAddEditModal.phone} onChange={e => setSchedAddEditModal(prev => ({...prev, phone: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+              </div>
+              
+              <div>
+                 <label className="block text-sm font-bold uppercase mb-2 text-gray-500">備註</label>
+                 <textarea rows={2} placeholder="選填..." value={schedAddEditModal.notes} onChange={e => setSchedAddEditModal(prev => ({...prev, notes: e.target.value}))} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none border focus:border-[#8B5A2B]" />
+              </div>
+            </div>
+            
+            <div className="flex space-x-4 shrink-0 mt-auto">
+               <button type="button" onClick={() => setSchedAddEditModal(null)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">取消</button>
+               <button type="submit" className="flex-1 py-4 rounded-xl text-xl font-bold text-white shadow-lg bg-[#8B5A2B] hover:bg-[#6D3A14] transition-colors">{schedAddEditModal.id ? '儲存更新' : '確認排入'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Scheduler Modal: View Appointment Details & Client Profile Connection */}
+      {schedDetailModal && (() => {
+         const matchedProfile = crmProfiles.find(p => p.fullName === schedDetailModal.clientName || (p.phone && p.phone === schedDetailModal.phone));
+         
+         return (
+         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-[2rem] max-w-md w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+               
+               <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
+                  <div>
+                     <div className="text-sm font-bold text-gray-400 mb-1">{schedDetailModal.date} {schedDetailModal.time} ({schedDetailModal.duration}分鐘)</div>
+                     <h3 className="text-3xl font-black text-[#4A2511]">{schedDetailModal.clientName}</h3>
+                  </div>
+                  <span className="text-sm font-bold text-white px-3 py-1 rounded" style={{ backgroundColor: STYLIST_THEMES[schedDetailModal.stylist]?.hex || '#595959' }}>{schedDetailModal.stylist}</span>
+               </div>
+
+               <div className="overflow-y-auto custom-scrollbar pr-2">
+                   <div className="space-y-4 mb-6">
+                      <div>
+                         <span className="block text-xs font-bold uppercase text-gray-400 mb-1">預約項目</span>
+                         <p className="font-bold text-lg text-gray-800">{schedDetailModal.service || '未指定'}</p>
+                      </div>
+                      {schedDetailModal.phone && (
+                         <div>
+                            <span className="block text-xs font-bold uppercase text-gray-400 mb-1">聯絡電話</span>
+                            <p className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                               {schedDetailModal.phone} 
+                               <a href={getWaLink(schedDetailModal.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 transition-colors bg-emerald-50 p-1.5 rounded-lg"><Icons.MessageCircle /></a>
+                            </p>
+                         </div>
+                      )}
+                      {schedDetailModal.notes && (
+                         <div>
+                            <span className="block text-xs font-bold uppercase text-gray-400 mb-1">備註事項</span>
+                            <p className="font-bold text-gray-600 bg-yellow-50 p-3 rounded-xl text-sm border border-yellow-100 whitespace-pre-wrap">{schedDetailModal.notes}</p>
+                         </div>
+                      )}
+                   </div>
+
+                   {/* CRM Auto Match Profile */}
+                   {matchedProfile ? (
+                       <div className="mb-6 p-4 rounded-2xl bg-blue-50/50 border border-blue-100">
+                           <div className="flex justify-between items-center mb-3">
+                               <h4 className="text-sm font-black text-blue-900 flex items-center gap-1"><Icons.User /> CRM 客戶檔案比對成功</h4>
+                               {matchedProfile.tags.map((t, idx) => (
+                                   <span key={idx} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${t.color}`}>{t.label}</span>
+                               ))}
+                           </div>
+                           <div className="grid grid-cols-2 gap-3 text-sm">
+                               <div><span className="block text-xs text-blue-400 font-bold mb-0.5">總消費</span><span className="font-black text-blue-800">${matchedProfile.totalSpent}</span></div>
+                               <div><span className="block text-xs text-blue-400 font-bold mb-0.5">上次造訪</span><span className="font-black text-blue-800">{matchedProfile.latestVisitDate === '1970-01-01' ? '無' : matchedProfile.latestVisitDate}</span></div>
+                               <div className="col-span-2"><span className="block text-xs text-blue-400 font-bold mb-0.5">上次服務</span><span className="font-bold text-blue-800">{matchedProfile.latestService || '無'}</span></div>
+                           </div>
+                           {matchedProfile.latestFormula && (
+                               <div className="mt-3 bg-white p-2 rounded-lg border border-blue-100">
+                                   <span className="block text-xs text-blue-400 font-bold mb-1">🧪 上次配方/備註</span>
+                                   <p className="text-xs font-mono text-gray-600 truncate">{matchedProfile.latestFormula}</p>
+                               </div>
+                           )}
+                       </div>
+                   ) : (
+                       <div className="mb-6 p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-400 text-center">
+                           ⚠️ CRM 查無此人，將於結帳時自動建立新檔
+                       </div>
+                   )}
+               </div>
+
+               <div className="grid grid-cols-2 gap-3 mb-4 shrink-0 mt-4">
+                  <button onClick={() => { playAudioFeedback('click'); setSchedAddEditModal({...schedDetailModal, oldStylist: schedDetailModal.stylist}); setSchedDetailModal(null); }} 
+                          className="py-3 rounded-xl font-bold bg-gray-50 text-blue-600 border border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                     <Icons.Edit /> 編輯 / 改期
+                  </button>
+                  <button onClick={() => { playAudioFeedback('warn'); setAptDeleteConfirm(schedDetailModal); }} 
+                          className="py-3 rounded-xl font-bold bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
+                     <Icons.Trash /> 刪除預約
+                  </button>
+               </div>
+               
+               <button onClick={() => handleCheckoutAppointment(schedDetailModal, schedDetailModal.stylist)} 
+                       className="w-full py-4 rounded-xl text-xl font-bold text-white shadow-lg bg-[#8B5A2B] hover:bg-[#6D3A14] transition-colors flex items-center justify-center gap-2 shrink-0">
+                  <Icons.Check /> 一鍵帶入結帳
+               </button>
+               
+               <button onClick={() => setSchedDetailModal(null)} className="mt-4 w-full py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors shrink-0">關閉面板</button>
+            </div>
+         </div>
+         );
+      })()}
+
+      {/* Apt Delete Confirm Modal */}
+      {aptDeleteConfirm && (
+        <div className="fixed inset-0 bg-red-900/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-[2rem] max-w-md w-full p-8 text-center shadow-2xl animate-in zoom-in-95">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icons.Trash /></div>
+            <h3 className="text-3xl font-black mb-2 text-[#4A2511]">確認刪除預約？</h3>
+            <p className="text-lg text-gray-500 font-bold mb-8">即將刪除 {aptDeleteConfirm.clientName} 的預約排程，此操作將同步至 Google 日曆。</p>
+            <div className="flex space-x-4">
+               <button onClick={() => setAptDeleteConfirm(null)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">取消</button>
+               <button onClick={handleDeleteCalendarEvent} className="flex-1 py-4 rounded-xl text-xl font-bold bg-red-500 text-white shadow-lg hover:bg-red-600">確認刪除</button>
             </div>
           </div>
         </div>
