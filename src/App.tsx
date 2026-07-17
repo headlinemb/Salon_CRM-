@@ -8,7 +8,7 @@ const Icons = {
   IdCard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>,
   Dollar: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Gift: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>,
-  Chart: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+  Chart: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Database: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>,
   Save: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>,
   Upload: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>,
@@ -59,6 +59,7 @@ const paymentMethods = [
 const defaultServices = ['剪髮 (Cut)', '洗吹 (Wash & Blow)', '電髮 (Perm)', '全頭染髮 (Color)', '髮根補染 (Root Touch)', '漂髮 (Bleach)', '挑染 (Highlights)', '角蛋白護理 (Keratin)', '頭皮理療 (Treatment)'];
 const birthMonthsList = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','不提供'];
 
+// Appointment Templates
 const APPOINTMENT_TEMPLATES = [
     { id: 't1', label: '洗吹 (Wash & Blow) - 30m', duration: 30, service: '洗吹 (Wash & Blow)' },
     { id: 't2', label: '剪髮 (Haircut) - 60m', duration: 60, service: '剪髮 (Cut)' },
@@ -68,6 +69,7 @@ const APPOINTMENT_TEMPLATES = [
     { id: 't4', label: '漂染套餐 (Bleach & Color) - 180m', duration: 180, service: '漂髮 (Bleach), 全頭染髮 (Color)' },
 ];
 
+// Time slots for scheduler
 const TIME_SLOTS = Array.from({length: 21}, (_, i) => {
     const hours = Math.floor(i / 2) + 10;
     const mins = i % 2 === 0 ? '00' : '30';
@@ -185,10 +187,13 @@ export default function App() {
   // Data Hub Auth
   const [dataHubUnlocked, setDataHubUnlocked] = useState(false);
   const [authPassword, setAuthPassword] = useState('');
+  const [importMode, setImportMode] = useState('csv_paste'); 
+  const [importInput, setImportInput] = useState('');
   
   // Modals State
   const [deleteConfirm, setDeleteConfirm] = useState(null); 
   const [editModal, setEditModal] = useState(null); 
+  const [profileAddModal, setProfileAddModal] = useState(false);
   const [profileEditData, setProfileEditData] = useState(null);
   const [clientDeleteConfirm, setClientDeleteConfirm] = useState(null);
   const [aptDeleteConfirm, setAptDeleteConfirm] = useState(null);
@@ -210,6 +215,19 @@ export default function App() {
   const [schedFilterStylist, setSchedFilterStylist] = useState('All');
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // API URL Builder
+  const getApiUrl = (action) => {
+    if (!driveApiUrl) return '';
+    try {
+        const url = new URL(driveApiUrl);
+        url.searchParams.set('action', action);
+        return url.toString();
+    } catch (e) {
+        return `${driveApiUrl}?action=${action}`;
+    }
+  };
+
+  // Settings State
   const [hairServices, setHairServices] = useState(() => {
     const saved = localStorage.getItem('headline_services_v11');
     return saved ? JSON.parse(saved) : defaultServices;
@@ -223,7 +241,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('headline_services_v11', JSON.stringify(hairServices));
   }, [hairServices]);
-
+  
   const generateServiceId = (isRetailOnly = false) => {
     const prefix = isRetailOnly ? 'R-' : 'S-';
     const now = new Date();
@@ -308,8 +326,8 @@ export default function App() {
   });
 
   const [dashboardPeriod, setDashboardPeriod] = useState('month');
-  const [dashboardStartDate, setDashboardStartDate] = useState(new Date().toLocaleDateString('en-CA'));
-  const [dashboardEndDate, setDashboardEndDate] = useState(new Date().toLocaleDateString('en-CA'));
+  const [dashboardStartDate, setDashboardStartDate] = useState('');
+  const [dashboardEndDate, setDashboardEndDate] = useState('');
   const [revenueMonths, setRevenueMonths] = useState(6);
   const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
 
@@ -319,7 +337,7 @@ export default function App() {
 
   const triggerNotification = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleTabChange = (tab) => {
@@ -368,18 +386,27 @@ export default function App() {
     setFormData(prev => ({ ...prev, price: finalPrice.toString() }));
   }, [formData.subtotal, formData.retailPrice, formData.discountPct]);
 
-  const fetchCalendarEvents = async () => {
+  // ✅ 加強版 API Fetch：打破快取
+  const fetchCalendarEvents = async (showNotification = false) => {
     if (!driveApiUrl) return;
     setIsCalendarLoading(true);
     try {
-      // ✅ 使用 redirect: 'follow' 來處理 GAS 的重導向
-      const response = await fetch(driveApiUrl, { redirect: 'follow' });
+      // 加入時間戳 (t=Date.now) 強制打破 Netlify 與瀏覽器的快取 (Cache)
+      const separator = driveApiUrl.includes('?') ? '&' : '?';
+      const fetchUrl = `${driveApiUrl}${separator}action=get_events&t=${Date.now()}`;
+      
+      const response = await fetch(fetchUrl, { redirect: 'follow' });
       const result = await response.json();
+      
       if (result.status === 'success' && result.data) {
         setCalendarEvents(result.data);
+        if (showNotification) triggerNotification('✅ 日曆預約已成功更新！');
+      } else {
+        if (showNotification) triggerNotification('❌ 拉取失敗，請確認 Google Apps Script 設定');
       }
     } catch (err) {
       console.warn("Calendar load failed", err);
+      if (showNotification) triggerNotification('❌ 同步失敗 (網路阻擋或快取異常)');
     } finally {
       setIsCalendarLoading(false);
     }
@@ -421,9 +448,8 @@ export default function App() {
 
     const fakeId = schedAddEditModal.id || ('evt_' + Date.now());
 
-    // ✅ 改回原本正確的 'create' 動作名稱
     const payload = {
-        action: 'create', 
+        action: 'create_event', // Google Apps script may use create_event or create. 
         stylist: schedAddEditModal.stylist,
         title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`,
         description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes,
@@ -455,21 +481,20 @@ export default function App() {
 
     if (schedAddEditModal.id) {
         try {
-            await fetch(driveApiUrl, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+            await fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         } catch(err) { console.error(err); }
     }
 
     try {
         triggerNotification('⏳ 雲端同步中...');
-        const res = await fetch(driveApiUrl, { method: 'POST', redirect: 'follow', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        const res = await fetch(getApiUrl('create_event'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         const result = await res.json();
-        if (result.status === 'success' || result.status === 200) {
+        if (result.status === 'success') {
             triggerNotification('✅ 預約已成功同步至 Google 日曆！');
             fetchCalendarEvents(); 
         }
     } catch(err) {
-        // 如果沒有回傳正確的 JSON，通常代表有擋 CORS，但只要 redirect: follow 就會送出成功
-        triggerNotification('✅ 預約同步請求已發送');
+        triggerNotification('❌ 同步至 Google 日曆失敗');
     }
   };
 
@@ -481,15 +506,17 @@ export default function App() {
     setSchedDetailModal(null);
     playAudioFeedback('success');
 
-    if (!driveApiUrl) return;
+    if (!driveApiUrl) {
+        triggerNotification('✅ 已本地刪除預約 (未設定 API)');
+        return;
+    }
 
     try {
         triggerNotification('⏳ 雲端刪除中...');
-        // ✅ 改回原本正確的 'delete' 動作名稱
-        await fetch(driveApiUrl, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        await fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
         triggerNotification('✅ 已從 Google 日曆刪除');
         fetchCalendarEvents();
-    } catch(e) {}
+    } catch(e) { triggerNotification('❌ 雲端刪除失敗'); }
   };
 
   const crmProfiles = useMemo(() => {
@@ -564,20 +591,10 @@ export default function App() {
       let tags = [];
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
       const isReferred = p.visits.some(v => (v.customerSource && v.customerSource.includes('Referral')) || (v.referredBy && v.referredBy.trim() !== ''));
-      
       if (p.visitCount === 1) {
-          const firstVisit = p.visits[0];
-          const isOldCustomerDigitallyAdded = firstVisit && firstVisit.customerSource && firstVisit.customerSource.includes('舊客');
-          
-          if (isReferred && !isOldCustomerDigitallyAdded) {
-             tags.push({ label: '🎁 首客推薦優惠 ($100)', color: 'bg-pink-100 text-pink-800 border-pink-300' });
-          } else if (isOldCustomerDigitallyAdded) {
-             tags.push({ label: '舊客 (數位建立)', color: 'bg-blue-100 text-blue-800 border-blue-300' });
-          } else {
-             tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
-          }
+          if (isReferred) tags.push({ label: '🎁 首客推薦優惠 ($100)', color: 'bg-pink-100 text-pink-800 border-pink-300' });
+          else tags.push({ label: '新客', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' });
       }
-      
       if (p.referralsMade > 0) tags.push({ label: `⭐ 累積推薦獎賞 ($${p.referralsMade * 100})`, color: 'bg-yellow-100 text-yellow-800 border-yellow-400' });
       
       let lastVisit = new Date(p.latestVisitDate === '1970-01-01' ? Date.now() : p.latestVisitDate);
@@ -772,21 +789,19 @@ export default function App() {
 
   const handleSubmitCheckout = (e) => {
     e.preventDefault();
-    if (!formData.firstName && !formData.lastName) return triggerNotification('⚠️ 結帳阻擋：請輸入姓名！');
-
-    // ✅ 新增嚴格的服務項目防呆：至少選一項服務或填寫產品
-    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
-    const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
-
-    if (!hasServices && !hasRetail) {
-        playAudioFeedback('warn');
-        return triggerNotification('⚠️ 結帳阻擋：請至少選擇一項服務或填寫產品！');
+    if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
+    
+    const numericPrice = parseInt(formData.price);
+    if (isNaN(numericPrice) || numericPrice === 0) {
+        if (formData.discountPct !== '100') {
+            return triggerNotification('⚠️ 總結金額不可為 0，請確認填寫正確！');
+        }
     }
 
-    // ✅ 新增嚴格的金額防呆：如果空白或等於 0 (且未選免費)，阻擋結帳
-    if (!formData.price || (parseInt(formData.price) === 0 && formData.discountPct !== '100')) {
-        playAudioFeedback('warn');
-        return triggerNotification('⚠️ 結帳阻擋：請填寫「總結算金額」！');
+    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
+    const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
+    if (!hasServices && !hasRetail) {
+        return triggerNotification('⚠️ 結帳失敗：必須至少選擇一項服務或填寫零售產品！');
     }
 
     setSubmitting(true);
@@ -799,7 +814,7 @@ export default function App() {
        finalSource = `新客 (${formData.sourceDetail})`;
     } else if (formData.clientType === 'Repeated' && !finalCustomerId) {
        finalCustomerId = getNextCustomerId(historyRecords);
-       finalSource = '舊客 (數位首建)';
+       finalSource = '舊客 (數位建立)';
     } else if (formData.clientType === 'Repeated') {
        finalSource = '舊客 (Repeated)';
     }
@@ -821,16 +836,13 @@ export default function App() {
     setTimeout(async () => {
       setHistoryRecords(prev => [finalRecord, ...prev]);
       
-      // CRM 寫回 Google Sheet (加上 redirect: follow)
       if (driveApiUrl) {
-        try { fetch(driveApiUrl, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch(err) {}
+        try { fetch(getApiUrl('append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch(err) {}
       }
       
-      // ✅ 結帳後自動消單 Google Calendar - 改用正確的 action: 'delete'
       if (formData._eventId && formData._stylist && driveApiUrl) {
-        try { fetch(driveApiUrl, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch (e) {}
+        try { fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
       }
-      
       setSubmitting(false);
       playAudioFeedback('cashier');
       setShowSuccessModal(true);
@@ -840,6 +852,55 @@ export default function App() {
       setShowEmailField(false);
       fetchCalendarEvents();
     }, 400); 
+  };
+
+  const handleCloudRefresh = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    try {
+      const separator = driveApiUrl.includes('?') ? '&' : '?';
+      const fetchUrl = `${driveApiUrl}${separator}action=sync_pull&t=${Date.now()}`;
+      
+      const res = await fetch(fetchUrl, { redirect: 'follow' });
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        const validData = data.filter(r => r && r.serviceId);
+        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setHistoryRecords(validData);
+        playAudioFeedback('success');
+        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
+      } else throw new Error('Format issue');
+    } catch(e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleCloudBackup = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
+    if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    triggerNotification('⏳ 雲端同步備份中，請稍候...');
+    try {
+      const res = await fetch(getApiUrl('sync_all'), {
+        method: 'POST',
+        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow'
+      });
+      const result = await res.json();
+      if (result.status === 'success') {
+        playAudioFeedback('success');
+        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
+      } else throw new Error(result.message);
+    } catch (e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 備份失敗，請確認 API 網址正確且具有執行權限。');
+    }
+    setIsSyncing(false);
   };
 
   const handleJSONImport = (e) => {
@@ -919,52 +980,6 @@ export default function App() {
     triggerNotification('✅ 系統備份檔案已成功下載！');
   };
 
-  const handleCloudRefresh = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    try {
-      const res = await fetch(driveApiUrl, { redirect: 'follow' });
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        const validData = data.filter(r => r && r.serviceId);
-        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setHistoryRecords(validData);
-        playAudioFeedback('success');
-        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
-      } else throw new Error('Format issue');
-    } catch(e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
-    }
-    setIsSyncing(false);
-  };
-
-  const handleCloudBackup = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
-    if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    triggerNotification('⏳ 雲端同步備份中，請稍候...');
-    try {
-      const res = await fetch(driveApiUrl, {
-        method: 'POST',
-        redirect: 'follow', 
-        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-      });
-      const result = await res.json();
-      if (result.status === 'success' || result.status === 200) {
-        playAudioFeedback('success');
-        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
-      } else throw new Error(result.message);
-    } catch (e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 備份失敗，請確認 API 網址正確且具有執行權限。');
-    }
-    setIsSyncing(false);
-  };
-
   const handleCloudRestore = async () => { handleCloudRefresh(); };
   const handleResetDatabase = () => { setHistoryRecords([]); setShowResetConfirm(false); triggerNotification('⚠️ 系統已清空。'); };
 
@@ -1020,6 +1035,9 @@ export default function App() {
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
           <div className="flex space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
             {[
               { id: 'scheduler', icon: Icons.Calendar, label: '預約排程' },
@@ -1037,13 +1055,10 @@ export default function App() {
               </button>
             ))}
           </div>
-        </div>
-        
-        {/* ✅ 右上角的咖啡色雲端同步按鈕 (純圖示) */}
-        <div className="flex items-center">
-            <button onClick={() => handleCloudRefresh()} title="從雲端抓取最新資料" className="bg-[#8B5A2B] text-white p-3 rounded-xl hover:bg-[#6D3A14] transition-colors shadow-sm ml-4 border border-[#6D3A14]">
-               <Icons.Refresh className={isSyncing ? "animate-spin" : ""} />
-            </button>
+          
+          <button onClick={handleCloudRefresh} disabled={isSyncing} className="bg-[#8B5A2B] text-white p-3 rounded-2xl hover:bg-[#6D3A14] transition-colors shadow-md" title="從雲端拉取最新 CRM 客戶資料">
+             <Icons.Refresh className={isSyncing ? "animate-spin" : ""} />
+          </button>
         </div>
       </header>
 
@@ -1073,7 +1088,7 @@ export default function App() {
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('week'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'week' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>週</button>
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('month'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'month' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>月</button>
                       </div>
-                      <button onClick={() => { playAudioFeedback('click'); fetchCalendarEvents(); triggerNotification('🔄 正在從 Google 日曆拉取最新預約...'); }} 
+                      <button onClick={() => { playAudioFeedback('click'); triggerNotification('🔄 正在從 Google 日曆拉取最新預約...'); fetchCalendarEvents(true); }} 
                         className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors shadow-sm">
                          <Icons.Refresh className={isCalendarLoading ? "animate-spin" : ""} /> <span>同步日曆</span>
                       </button>
@@ -1317,7 +1332,6 @@ export default function App() {
           </div>
         )}
 
-        {}
         {/* ==========================================
             TAB 1: CHECKOUT FORM
             ========================================== */}
@@ -1399,7 +1413,10 @@ export default function App() {
                              {showReferralSuggest && referralSuggests.length > 0 && (
                                 <div className="absolute z-50 top-[100%] mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl max-h-40 overflow-y-auto">
                                    {referralSuggests.map(p => (
-                                     <div key={p.customerId} onMouseDown={() => handleSelectReferralSuggest(p)} className="px-3 py-2 border-b last:border-0 hover:bg-yellow-50 cursor-pointer flex justify-between items-center text-xs">
+                                     <div key={p.customerId} onMouseDown={() => {
+                                         setFormData(prev => ({...prev, referredBy: p.fullName}));
+                                         setShowReferralSuggest(false);
+                                     }} className="px-3 py-2 border-b last:border-0 hover:bg-yellow-50 cursor-pointer flex justify-between items-center text-xs">
                                        <div>
                                          <span className="font-black text-[#4A2511]">{p.fullName}</span>
                                          {p.phone && <span className="ml-2 text-gray-400">{p.phone}</span>}
@@ -1577,7 +1594,7 @@ export default function App() {
                 <div className="mt-5">
                   <button type="button" onClick={() => { playAudioFeedback('click'); setShowNotes(!showNotes); }} 
                           className="w-full flex items-center justify-between py-4 px-6 bg-gray-50 border border-gray-200 rounded-2xl text-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
-                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結、備註'}</span></span>
+                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結與私密備註'}</span></span>
                       {showNotes ? <Icons.Minus /> : <Icons.Plus />}
                   </button>
                   
@@ -1649,7 +1666,6 @@ export default function App() {
           </form>
         )}
 
-        {}
         {/* ==========================================
             TAB 2: CRM DIRECTORY
             ========================================== */}
@@ -2036,31 +2052,30 @@ export default function App() {
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                    <h3 className="text-2xl font-black text-[#4A2511]">交易明細總表 (可點擊編輯)</h3>
-                   <div className="flex flex-wrap gap-2 items-center">
-                       {/* ✅ 加入 < TODAY > 快速選取按鈕 */}
-                       <div className="flex gap-1 items-center mr-2">
-                          <button onClick={() => {
-                               const d = new Date(dashboardStartDate || new Date());
-                               d.setDate(d.getDate() - 1);
-                               const ds = d.toLocaleDateString('en-CA');
-                               setDashboardStartDate(ds); setDashboardEndDate(ds);
-                          }} className="p-2 bg-[#F6EFE9] text-[#8B5A2B] rounded-lg hover:bg-[#E8DCC8] transition-colors"><Icons.ChevronLeft /></button>
-                          
-                          <button onClick={() => {
-                               const ds = new Date().toLocaleDateString('en-CA');
-                               setDashboardStartDate(ds); setDashboardEndDate(ds);
-                          }} className="px-3 py-1.5 bg-[#F6EFE9] text-[#8B5A2B] font-bold rounded-lg hover:bg-[#E8DCC8] transition-colors text-sm">TODAY</button>
-                          
-                          <button onClick={() => {
-                               const d = new Date(dashboardEndDate || new Date());
-                               d.setDate(d.getDate() + 1);
-                               const ds = d.toLocaleDateString('en-CA');
-                               setDashboardStartDate(ds); setDashboardEndDate(ds);
-                          }} className="p-2 bg-[#F6EFE9] text-[#8B5A2B] rounded-lg hover:bg-[#E8DCC8] transition-colors"><Icons.ChevronRight /></button>
-                       </div>
-                       <input type="date" value={dashboardStartDate} onChange={e=>setDashboardStartDate(e.target.value)} className="bg-gray-50 border rounded-xl px-3 py-2 font-bold text-sm outline-none" />
-                       <span className="py-2 text-gray-400">~</span>
-                       <input type="date" value={dashboardEndDate} onChange={e=>setDashboardEndDate(e.target.value)} className="bg-gray-50 border rounded-xl px-3 py-2 font-bold text-sm outline-none" />
+                   <div className="flex gap-2 items-center bg-gray-50 border p-1.5 rounded-xl">
+                       <button onClick={() => {
+                           const current = dashboardStartDate ? new Date(dashboardStartDate) : new Date();
+                           current.setDate(current.getDate() - 1);
+                           const dStr = current.toLocaleDateString('en-CA');
+                           setDashboardStartDate(dStr); setDashboardEndDate(dStr);
+                       }} className="px-3 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-gray-500">&lt;</button>
+                       
+                       <button onClick={() => {
+                           const today = new Date().toLocaleDateString('en-CA');
+                           setDashboardStartDate(today); setDashboardEndDate(today);
+                       }} className="px-4 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-[#8B5A2B]">TODAY</button>
+                       
+                       <button onClick={() => {
+                           const current = dashboardStartDate ? new Date(dashboardStartDate) : new Date();
+                           current.setDate(current.getDate() + 1);
+                           const dStr = current.toLocaleDateString('en-CA');
+                           setDashboardStartDate(dStr); setDashboardEndDate(dStr);
+                       }} className="px-3 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-gray-500">&gt;</button>
+
+                       <span className="text-gray-300 mx-2">|</span>
+                       <input type="date" value={dashboardStartDate} onChange={e=>setDashboardStartDate(e.target.value)} className="bg-white border rounded-lg px-2 py-1.5 font-bold text-sm outline-none" />
+                       <span className="text-gray-400">-</span>
+                       <input type="date" value={dashboardEndDate} onChange={e=>setDashboardEndDate(e.target.value)} className="bg-white border rounded-lg px-2 py-1.5 font-bold text-sm outline-none" />
                    </div>
                </div>
                <div className="overflow-x-auto custom-scrollbar max-h-[500px]">
@@ -2180,7 +2195,7 @@ export default function App() {
                            <Icons.Check /> <span>資料安全操作指南</span>
                         </h3>
                         <ul className="space-y-4 text-sm font-bold opacity-90 leading-relaxed">
-                            <li className="flex gap-2"><span className="text-amber-400">1.</span> <span><b>每日早晨：</b>點擊右上角的「🔄 重新整理」按鈕，獲取雲端最新資料，確保各分店進度一致。</span></li>
+                            <li className="flex gap-2"><span className="text-amber-400">1.</span> <span><b>每日早晨：</b>點擊右上角的「🔄 同步按鈕」，獲取雲端最新資料，確保各分店進度一致。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">2.</span> <span><b>日常結帳：</b>直接在 Checkout 頁面結帳，系統會自動將資料背景寫入雲端，<span className="underline">不需手動上傳</span>。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">3.</span> <span><b>修改與刪除：</b>若在客歷卡或儀表板修改/刪除了歷史紀錄，請務必點擊下方的「一鍵上傳備份至雲端」以覆蓋舊檔。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">4.</span> <span><b>每週備份：</b>店長請每週執行一次最下方的「完整系統備份 (JSON)」，將實體檔案存於本機以防萬一。</span></li>
@@ -2246,7 +2261,6 @@ export default function App() {
         )}
       </main>
 
-      {}
       {/* ==========================================
           MODALS & OVERLAYS
           ========================================== */}
@@ -2297,7 +2311,6 @@ export default function App() {
         </div>
       )}
 
-      {}
       {editModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
@@ -2395,7 +2408,6 @@ export default function App() {
         </div>
       )}
 
-      {}
       {clientDeleteConfirm && (
         <div className="fixed inset-0 bg-red-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[2rem] max-w-md w-full p-8 text-center shadow-2xl animate-in zoom-in-95">
@@ -2466,7 +2478,6 @@ export default function App() {
         </div>
       )}
 
-      {}
       {/* Scheduler Modal: Add/Edit Appointment */}
       {schedAddEditModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
@@ -2479,6 +2490,7 @@ export default function App() {
             
             <div className="overflow-y-auto custom-scrollbar pr-2 space-y-4 mb-6">
               
+              {/* Double Booking Warning */}
               {checkConflict(schedAddEditModal.stylist, schedAddEditModal.date, schedAddEditModal.time, schedAddEditModal.duration, schedAddEditModal.id) && (
                   <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-xl font-bold flex items-center gap-2 text-sm animate-in fade-in">
                       <Icons.AlertTriangle /> <span>注意：該時段已有其他預約，強行排入將導致座位超載！</span>
