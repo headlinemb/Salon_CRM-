@@ -1073,6 +1073,10 @@ export default function App() {
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('week'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'week' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>週</button>
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('month'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'month' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>月</button>
                       </div>
+                      <button onClick={() => { playAudioFeedback('click'); fetchCalendarEvents(); triggerNotification('🔄 正在從 Google 日曆拉取最新預約...'); }} 
+                        className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors shadow-sm">
+                         <Icons.Refresh className={isCalendarLoading ? "animate-spin" : ""} /> <span>同步日曆</span>
+                      </button>
                       <button onClick={() => { playAudioFeedback('click'); setSchedAddEditModal({ date: schedSelectedDate.toLocaleDateString('en-CA'), time: '12:00', duration: 60, stylist: schedFilterStylist === 'All' ? 'Man' : schedFilterStylist, clientName: '', service: '', phone: '', notes: '' }); }} 
                         className="bg-[#8B5A2B] text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#6D3A14] transition-colors shadow-sm">
                          <Icons.Plus /> <span>新增預約</span>
