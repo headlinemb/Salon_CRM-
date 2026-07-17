@@ -59,7 +59,6 @@ const paymentMethods = [
 const defaultServices = ['剪髮 (Cut)', '洗吹 (Wash & Blow)', '電髮 (Perm)', '全頭染髮 (Color)', '髮根補染 (Root Touch)', '漂髮 (Bleach)', '挑染 (Highlights)', '角蛋白護理 (Keratin)', '頭皮理療 (Treatment)'];
 const birthMonthsList = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','不提供'];
 
-// Appointment Templates
 const APPOINTMENT_TEMPLATES = [
     { id: 't1', label: '洗吹 (Wash & Blow) - 30m', duration: 30, service: '洗吹 (Wash & Blow)' },
     { id: 't2', label: '剪髮 (Haircut) - 60m', duration: 60, service: '剪髮 (Cut)' },
@@ -69,7 +68,6 @@ const APPOINTMENT_TEMPLATES = [
     { id: 't4', label: '漂染套餐 (Bleach & Color) - 180m', duration: 180, service: '漂髮 (Bleach), 全頭染髮 (Color)' },
 ];
 
-// Time slots for scheduler
 const TIME_SLOTS = Array.from({length: 21}, (_, i) => {
     const hours = Math.floor(i / 2) + 10;
     const mins = i % 2 === 0 ? '00' : '30';
@@ -187,8 +185,6 @@ export default function App() {
   // Data Hub Auth
   const [dataHubUnlocked, setDataHubUnlocked] = useState(false);
   const [authPassword, setAuthPassword] = useState('');
-  const [importMode, setImportMode] = useState('csv_paste'); 
-  const [importInput, setImportInput] = useState('');
   
   // Modals State
   const [deleteConfirm, setDeleteConfirm] = useState(null); 
@@ -200,8 +196,9 @@ export default function App() {
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Cloud Sync State
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api') || 'https://script.google.com/macros/s/AKfycbwkJ5cLdYjXyVlRdAwGMBjMdJinl2ilMGEBy_OEi6yOk2V_O06Lz2j8ce8jw_NIx4DoPQ/exec');
+  // Cloud Sync State - Separated CRM and Calendar APIs
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api') || '');
+  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api') || '');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Scheduler State
@@ -215,7 +212,7 @@ export default function App() {
   const [schedFilterStylist, setSchedFilterStylist] = useState('All');
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // API URL Builder
+  // API URL Builders
   const getApiUrl = (action) => {
     if (!driveApiUrl) return '';
     try {
@@ -224,6 +221,17 @@ export default function App() {
         return url.toString();
     } catch (e) {
         return `${driveApiUrl}?action=${action}`;
+    }
+  };
+
+  const getCalApiUrl = (action) => {
+    if (!calendarApiUrl) return '';
+    try {
+        const url = new URL(calendarApiUrl);
+        url.searchParams.set('action', action);
+        return url.toString();
+    } catch (e) {
+        return `${calendarApiUrl}?action=${action}`;
     }
   };
 
@@ -334,6 +342,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue)); }, [historicalRevenue]);
   useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(historyRecords)); }, [historyRecords]);
   useEffect(() => { localStorage.setItem('headline_drive_api', driveApiUrl); }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_calendar_api', calendarApiUrl); }, [calendarApiUrl]);
 
   const triggerNotification = (msg) => {
     setNotification(msg);
@@ -386,14 +395,15 @@ export default function App() {
     setFormData(prev => ({ ...prev, price: finalPrice.toString() }));
   }, [formData.subtotal, formData.retailPrice, formData.discountPct]);
 
-  // ✅ 加強版 API Fetch：打破快取
   const fetchCalendarEvents = async (showNotification = false) => {
-    if (!driveApiUrl) return;
+    if (!calendarApiUrl) {
+        if (showNotification) triggerNotification('❌ 請先至資料中心設定 Calendar API 網址');
+        return;
+    }
     setIsCalendarLoading(true);
     try {
-      // 加入時間戳 (t=Date.now) 強制打破 Netlify 與瀏覽器的快取 (Cache)
-      const separator = driveApiUrl.includes('?') ? '&' : '?';
-      const fetchUrl = `${driveApiUrl}${separator}action=get_events&t=${Date.now()}`;
+      const separator = calendarApiUrl.includes('?') ? '&' : '?';
+      const fetchUrl = `${calendarApiUrl}${separator}action=get_events&t=${Date.now()}`;
       
       const response = await fetch(fetchUrl, { redirect: 'follow' });
       const result = await response.json();
@@ -413,8 +423,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchCalendarEvents();
-  }, [driveApiUrl]);
+    if(calendarApiUrl) fetchCalendarEvents();
+  }, [calendarApiUrl]);
 
   const checkConflict = (stylist, dateStr, timeStr, durationMins, excludeEventId = null) => {
     if(!stylist || !dateStr || !timeStr || !durationMins) return false;
@@ -449,7 +459,7 @@ export default function App() {
     const fakeId = schedAddEditModal.id || ('evt_' + Date.now());
 
     const payload = {
-        action: 'create_event', // Google Apps script may use create_event or create. 
+        action: 'create', // Updated to match expected Apps Script
         stylist: schedAddEditModal.stylist,
         title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`,
         description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes,
@@ -474,20 +484,20 @@ export default function App() {
     setSchedAddEditModal(null);
     playAudioFeedback('success');
 
-    if (!driveApiUrl) {
-        triggerNotification('✅ 已本地新增預約 (未設定 API)');
+    if (!calendarApiUrl) {
+        triggerNotification('✅ 已本地新增預約 (未設定 Calendar API)');
         return;
     }
 
     if (schedAddEditModal.id) {
         try {
-            await fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+            await fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         } catch(err) { console.error(err); }
     }
 
     try {
         triggerNotification('⏳ 雲端同步中...');
-        const res = await fetch(getApiUrl('create_event'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+        const res = await fetch(getCalApiUrl('create'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         const result = await res.json();
         if (result.status === 'success') {
             triggerNotification('✅ 預約已成功同步至 Google 日曆！');
@@ -506,14 +516,14 @@ export default function App() {
     setSchedDetailModal(null);
     playAudioFeedback('success');
 
-    if (!driveApiUrl) {
-        triggerNotification('✅ 已本地刪除預約 (未設定 API)');
+    if (!calendarApiUrl) {
+        triggerNotification('✅ 已本地刪除預約 (未設定 Calendar API)');
         return;
     }
 
     try {
         triggerNotification('⏳ 雲端刪除中...');
-        await fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
+        await fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
         triggerNotification('✅ 已從 Google 日曆刪除');
         fetchCalendarEvents();
     } catch(e) { triggerNotification('❌ 雲端刪除失敗'); }
@@ -791,6 +801,7 @@ export default function App() {
     e.preventDefault();
     if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
     
+    // Strict amount checking
     const numericPrice = parseInt(formData.price);
     if (isNaN(numericPrice) || numericPrice === 0) {
         if (formData.discountPct !== '100') {
@@ -798,6 +809,7 @@ export default function App() {
         }
     }
 
+    // Strict service checking
     const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
     const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
     if (!hasServices && !hasRetail) {
@@ -840,9 +852,11 @@ export default function App() {
         try { fetch(getApiUrl('append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch(err) {}
       }
       
-      if (formData._eventId && formData._stylist && driveApiUrl) {
-        try { fetch(getApiUrl('delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
+      // Auto delete event from calendar
+      if (formData._eventId && formData._stylist && calendarApiUrl) {
+        try { fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
       }
+
       setSubmitting(false);
       playAudioFeedback('cashier');
       setShowSuccessModal(true);
@@ -855,7 +869,7 @@ export default function App() {
   };
 
   const handleCloudRefresh = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
+    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 CRM Google Sheet API 網址！');
     playAudioFeedback('click');
     setIsSyncing(true);
     try {
@@ -869,7 +883,7 @@ export default function App() {
         validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
         setHistoryRecords(validData);
         playAudioFeedback('success');
-        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
+        triggerNotification(`🔄 已成功同步 CRM 雲端最新資料庫！`);
       } else throw new Error('Format issue');
     } catch(e) {
       playAudioFeedback('warn');
@@ -879,7 +893,7 @@ export default function App() {
   };
 
   const handleCloudBackup = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
+    if (!driveApiUrl) return triggerNotification('❌ 請先設定 CRM Google Sheet API 網址！');
     if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
     playAudioFeedback('click');
     setIsSyncing(true);
@@ -1031,7 +1045,7 @@ export default function App() {
         <div className="flex items-center space-x-8">
           <div className="flex flex-col items-start justify-center select-none pt-1">
             <h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.6 Pro</span>
+                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.7 Pro</span>
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
@@ -1056,7 +1070,7 @@ export default function App() {
             ))}
           </div>
           
-          <button onClick={handleCloudRefresh} disabled={isSyncing} className="bg-[#8B5A2B] text-white p-3 rounded-2xl hover:bg-[#6D3A14] transition-colors shadow-md" title="從雲端拉取最新 CRM 客戶資料">
+          <button onClick={handleCloudRefresh} disabled={isSyncing} className="bg-[#8B5A2B] text-white p-3 rounded-xl hover:bg-[#6D3A14] transition-colors shadow-md" title="從雲端拉取最新 CRM 客戶資料">
              <Icons.Refresh className={isSyncing ? "animate-spin" : ""} />
           </button>
         </div>
@@ -2210,11 +2224,19 @@ export default function App() {
                          </div>
                       )}
                       <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
-                         <Icons.Cloud /> <span>Google Drive 雲端雙向同步</span>
+                         <Icons.Cloud /> <span>API 串接設定 (Google Sync)</span>
                       </h3>
-                      <div className="mb-5">
-                         <input type="text" placeholder="請貼上部署好的 Google Apps Script 網址..." value={driveApiUrl} onChange={(e) => setDriveApiUrl(e.target.value)}
-                                className="w-full bg-blue-50 border-blue-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-blue-400 text-blue-900" />
+                      <div className="mb-5 space-y-4">
+                         <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">CRM 客戶資料庫 API (Google Sheet)</label>
+                            <input type="text" placeholder="請貼上 Sheet 部署的 Apps Script 網址..." value={driveApiUrl} onChange={(e) => setDriveApiUrl(e.target.value)}
+                                   className="w-full bg-blue-50 border-blue-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-blue-400 text-blue-900" />
+                         </div>
+                         <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">預約排程 API (Google Calendar)</label>
+                            <input type="text" placeholder="請貼上 Calendar 部署的 Apps Script 網址..." value={calendarApiUrl} onChange={(e) => setCalendarApiUrl(e.target.value)}
+                                   className="w-full bg-amber-50 border-amber-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-amber-400 text-amber-900" />
+                         </div>
                       </div>
                       <div className="flex gap-4">
                          <button onClick={handleCloudBackup} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-[#8B5A2B] text-white hover:bg-[#6D3A14] rounded-2xl transition-colors shadow-lg">
