@@ -46,7 +46,7 @@ const STYLIST_THEMES = {
   'Others': { hex: '#595959', light: '#59595915', shadow: 'rgba(89, 89, 89, 0.3)' }
 };
 
-const CHART_COLORS = ['#6D3A14', '#9F3E3E', '#2C496A', '#C4A485', '#595959'];
+const CHART_COLORS = ['#6D3A14', '#9F3E3E', '#2C496A', '#C4A485', '#595959', '#A87C51', '#855E42', '#3D2B1F'];
 const chemicalKeywords = ['電', '染', '漂', 'Keratin', 'Perm', 'Color', 'Highlight', 'Touch', 'Bleach'];
 const scalpNotes = ['正常', '偏油性', '偏乾性', '敏感性頭皮', '髮質偏幼細', '嚴重受損髮質', '抗拒染膏'];
 const defaultInterests = ['白頭髮遮蓋', '想試染髮', '有機/天然品牌', '縮毛矯正', '受損髮質修護'];
@@ -135,24 +135,37 @@ const playAudioFeedback = (type) => {
   }
 };
 
+// ==========================================
+// V12.6.9 強化的日期解析函式 (解決 Google Sheet 怪異日期格式導致的 Bug)
+// ==========================================
 const parseDateFlexible = (dateStr) => {
   if (!dateStr) return '';
   try {
     const cleanStr = String(dateStr).trim();
-    let d = new Date(cleanStr);
-    if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
-    const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (ydmMatch) {
-        if (parseInt(ydmMatch[2]) > 12 && parseInt(ydmMatch[3]) <= 12) {
-           d = new Date(`${ydmMatch[1]}-${ydmMatch[3]}-${ydmMatch[2]}`);
-           if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
-        }
+    // 1. 如果包含 T (例如 2026-07-20T16:00:00.000Z)，直接轉換成本地日期
+    if (cleanStr.includes('T') || cleanStr.includes('Z')) {
+       const d = new Date(cleanStr);
+       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
+    
+    // 2. 嘗試使用原生 Date 解析 (支援 7/20/2026 等格式)
+    let d = new Date(cleanStr);
+    if (!isNaN(d.getTime())) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    // 3. 處理特殊的中文格式
     const zhMatch = cleanStr.match(/(\d{1,2})月(\d{1,2})日(\d{4})/);
     if (zhMatch) return `${zhMatch[3]}-${zhMatch[1].padStart(2, '0')}-${zhMatch[2].padStart(2, '0')}`;
+    
+    // 4. 已經是 YYYY-MM-DD
+    const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ydmMatch) return cleanStr;
+    
+    // 5. fallback
     return cleanStr.split(' ')[0];
   } catch (e) {
-    return String(dateStr);
+    return String(dateStr).split(' ')[0];
   }
 };
 
@@ -169,6 +182,10 @@ const getFullName = (record) => {
   if (record.firstName || record.lastName) return `${record.firstName || ''} ${record.lastName || ''}`.trim();
   return record.name || 'Unknown';
 };
+
+// AUTO FILL GOOGLE APP SCRIPT DEFAULT URL (V12.6.9 Pro)
+const DEFAULT_CRM_API_URL = 'https://script.google.com/macros/s/AKfycbwLCVTWXuMmUx3-XM18RcRbySm08cZlRTGdJSn8RmTedtNAQyjjR6pPQhHD8nDx9njWug/exec';
+const DEFAULT_CALENDAR_API_URL = 'https://script.google.com/macros/s/AKfycbwkJ5cLdYjXyVlRdAwGMBjMdJinl2ilMGEBy_OEi6yOk2V_O06Lz2j8ce8jw_NIx4DoPQ/exec';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('scheduler'); 
@@ -189,16 +206,15 @@ export default function App() {
   // Modals State
   const [deleteConfirm, setDeleteConfirm] = useState(null); 
   const [editModal, setEditModal] = useState(null); 
-  const [profileAddModal, setProfileAddModal] = useState(false);
   const [profileEditData, setProfileEditData] = useState(null);
   const [clientDeleteConfirm, setClientDeleteConfirm] = useState(null);
   const [aptDeleteConfirm, setAptDeleteConfirm] = useState(null);
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Cloud Sync State - Separated CRM and Calendar APIs
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api') || '');
-  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api') || '');
+  // Cloud Sync State - With Default API URLs and version bumping to force updates
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v1269') || DEFAULT_CRM_API_URL);
+  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v1269') || DEFAULT_CALENDAR_API_URL);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Scheduler State
@@ -212,26 +228,16 @@ export default function App() {
   const [schedFilterStylist, setSchedFilterStylist] = useState('All');
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // API URL Builders
-  const getApiUrl = (action) => {
-    if (!driveApiUrl) return '';
+  // API URL Builders with Cache Busting
+  const getApiUrl = (action, baseUrl) => {
+    if (!baseUrl) return '';
     try {
-        const url = new URL(driveApiUrl);
+        const url = new URL(baseUrl);
         url.searchParams.set('action', action);
+        url.searchParams.set('t', Date.now()); // 打破瀏覽器快取
         return url.toString();
     } catch (e) {
-        return `${driveApiUrl}?action=${action}`;
-    }
-  };
-
-  const getCalApiUrl = (action) => {
-    if (!calendarApiUrl) return '';
-    try {
-        const url = new URL(calendarApiUrl);
-        url.searchParams.set('action', action);
-        return url.toString();
-    } catch (e) {
-        return `${calendarApiUrl}?action=${action}`;
+        return `${baseUrl}?action=${action}&t=${Date.now()}`;
     }
   };
 
@@ -341,8 +347,8 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue)); }, [historicalRevenue]);
   useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(historyRecords)); }, [historyRecords]);
-  useEffect(() => { localStorage.setItem('headline_drive_api', driveApiUrl); }, [driveApiUrl]);
-  useEffect(() => { localStorage.setItem('headline_calendar_api', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_drive_api_v1269', driveApiUrl); }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_calendar_api_v1269', calendarApiUrl); }, [calendarApiUrl]);
 
   const triggerNotification = (msg) => {
     setNotification(msg);
@@ -402,8 +408,7 @@ export default function App() {
     }
     setIsCalendarLoading(true);
     try {
-      const separator = calendarApiUrl.includes('?') ? '&' : '?';
-      const fetchUrl = `${calendarApiUrl}${separator}action=get_events&t=${Date.now()}`;
+      const fetchUrl = getApiUrl('get_events', calendarApiUrl);
       
       const response = await fetch(fetchUrl, { redirect: 'follow' });
       const result = await response.json();
@@ -459,7 +464,7 @@ export default function App() {
     const fakeId = schedAddEditModal.id || ('evt_' + Date.now());
 
     const payload = {
-        action: 'create', // Updated to match expected Apps Script
+        action: 'create', 
         stylist: schedAddEditModal.stylist,
         title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`,
         description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes,
@@ -491,13 +496,13 @@ export default function App() {
 
     if (schedAddEditModal.id) {
         try {
-            await fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+            await fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         } catch(err) { console.error(err); }
     }
 
     try {
         triggerNotification('⏳ 雲端同步中...');
-        const res = await fetch(getCalApiUrl('create'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+        const res = await fetch(getApiUrl('create', calendarApiUrl), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
         const result = await res.json();
         if (result.status === 'success') {
             triggerNotification('✅ 預約已成功同步至 Google 日曆！');
@@ -523,7 +528,7 @@ export default function App() {
 
     try {
         triggerNotification('⏳ 雲端刪除中...');
-        await fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
+        await fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
         triggerNotification('✅ 已從 Google 日曆刪除');
         fetchCalendarEvents();
     } catch(e) { triggerNotification('❌ 雲端刪除失敗'); }
@@ -560,14 +565,19 @@ export default function App() {
       }
       
       const p = profiles[key];
-      if (!record.isProfileOnly) {
+      
+      // 確保排除「建立檔案」等非實際消費紀錄
+      const isActualVisit = !record.isProfileOnly && record.services !== '建立檔案' && record.services !== '系統匯入';
+
+      if (isActualVisit) {
           p.visitCount += 1;
           p.totalSpent += parseInt(record.price) || 0;
           p.visits.push(record);
       }
       
+      // V12.6.9 Pro: 透過強化的 parseDateFlexible 確保比較正確
       const recDate = formatShortDate(record.date);
-      if (recDate && recDate > p.latestVisitDate && !record.isProfileOnly) {
+      if (recDate && recDate > p.latestVisitDate && isActualVisit) {
         p.latestVisitDate = recDate;
         p.preferredStylist = record.stylist;
         if (record.formula) p.latestFormula = record.formula;
@@ -642,6 +652,7 @@ export default function App() {
     let totalRev = 0, retailRev = 0, maleCount = 0, enCount = 0, returningCount = 0;
     const stylistMap = {};
     const serviceMap = {};
+    const sourceMap = {};
 
     filtered.forEach(r => {
       totalRev += (parseInt(r.price) || 0);
@@ -662,11 +673,18 @@ export default function App() {
         const shortName = s.trim();
         if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案') serviceMap[shortName] = (serviceMap[shortName] || 0) + 1;
       });
+
+      // Extract new customer source for Donut chart
+      if (r.customerSource && r.customerSource.includes('新客')) {
+          const src = r.customerSource.replace('新客', '').replace(/[()]/g, '').trim() || '其他';
+          sourceMap[src] = (sourceMap[src] || 0) + 1;
+      }
     });
 
     const totalClients = filtered.length;
     const stylistChart = Object.keys(stylistMap).map(k => ({ name: k, value: stylistMap[k] }));
     const serviceChart = Object.keys(serviceMap).map(k => ({ name: k, count: serviceMap[k] })).sort((a,b)=>b.count-a.count).slice(0,5);
+    const sourceChart = Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })).sort((a,b)=>b.value-a.value);
 
     const monthlyRev = {};
     for (let i = revenueMonths - 1; i >= 0; i--) {
@@ -692,7 +710,7 @@ export default function App() {
     }
 
     return {
-      totalRev, totalClients, retailRev, stylistChart, serviceChart, monthlyChart,
+      totalRev, totalClients, retailRev, stylistChart, serviceChart, sourceChart, monthlyChart,
       filteredRecords: listFiltered,
       avgSpending: totalClients > 0 ? (totalRev / totalClients).toFixed(0) : 0,
       malePct: totalClients > 0 ? ((maleCount / totalClients) * 100).toFixed(0) : 0,
@@ -799,12 +817,16 @@ export default function App() {
 
   const handleSubmitCheckout = (e) => {
     e.preventDefault();
-    if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
+    if (!formData.firstName && !formData.lastName) {
+        playAudioFeedback('warn');
+        return triggerNotification('請輸入姓名！');
+    }
     
     // Strict amount checking
     const numericPrice = parseInt(formData.price);
     if (isNaN(numericPrice) || numericPrice === 0) {
         if (formData.discountPct !== '100') {
+            playAudioFeedback('warn');
             return triggerNotification('⚠️ 總結金額不可為 0，請確認填寫正確！');
         }
     }
@@ -813,6 +835,7 @@ export default function App() {
     const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
     const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
     if (!hasServices && !hasRetail) {
+        playAudioFeedback('warn');
         return triggerNotification('⚠️ 結帳失敗：必須至少選擇一項服務或填寫零售產品！');
     }
 
@@ -826,7 +849,7 @@ export default function App() {
        finalSource = `新客 (${formData.sourceDetail})`;
     } else if (formData.clientType === 'Repeated' && !finalCustomerId) {
        finalCustomerId = getNextCustomerId(historyRecords);
-       finalSource = '舊客 (數位建立)';
+       finalSource = '舊客 (數位首建)';
     } else if (formData.clientType === 'Repeated') {
        finalSource = '舊客 (Repeated)';
     }
@@ -849,12 +872,11 @@ export default function App() {
       setHistoryRecords(prev => [finalRecord, ...prev]);
       
       if (driveApiUrl) {
-        try { fetch(getApiUrl('append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch(err) {}
+        try { fetch(getApiUrl('append', driveApiUrl), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch(err) {}
       }
       
-      // Auto delete event from calendar
       if (formData._eventId && formData._stylist && calendarApiUrl) {
-        try { fetch(getCalApiUrl('delete'), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
+        try { fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
       }
 
       setSubmitting(false);
@@ -873,8 +895,7 @@ export default function App() {
     playAudioFeedback('click');
     setIsSyncing(true);
     try {
-      const separator = driveApiUrl.includes('?') ? '&' : '?';
-      const fetchUrl = `${driveApiUrl}${separator}action=sync_pull&t=${Date.now()}`;
+      const fetchUrl = getApiUrl('sync_pull', driveApiUrl);
       
       const res = await fetch(fetchUrl, { redirect: 'follow' });
       const data = await res.json();
@@ -899,7 +920,7 @@ export default function App() {
     setIsSyncing(true);
     triggerNotification('⏳ 雲端同步備份中，請稍候...');
     try {
-      const res = await fetch(getApiUrl('sync_all'), {
+      const res = await fetch(getApiUrl('sync_all', driveApiUrl), {
         method: 'POST',
         body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1045,7 +1066,7 @@ export default function App() {
         <div className="flex items-center space-x-8">
           <div className="flex flex-col items-start justify-center select-none pt-1">
             <h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.7 Pro</span>
+                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.9 Pro</span>
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
@@ -1366,18 +1387,19 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* V12.6.9 Pro: Layout Update for Name and Source */}
                 <div className="grid grid-cols-12 gap-4 mb-4 relative">
-                  <div className="col-span-7 relative">
+                  <div className="col-span-5 relative">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">顧客姓名 (Name)</label>
                      <div className="flex space-x-2">
-                       <div className="relative w-[65%]">
+                       <div className="relative w-[40%]">
                           <input type="text" value={formData.firstName} onChange={handleNameSearchInput} onBlur={() => setTimeout(() => setShowNameSuggest(false), 200)} required placeholder="First (搜尋...)"
                             className="w-full rounded-xl py-2.5 px-3 pr-8 text-lg font-black bg-[#F6EFE9] border-transparent focus:bg-white focus:border-[#8B5A2B] border outline-none transition-colors" />
                           {formData.firstName && (
                              <button type="button" onClick={() => setFormData({...formData, firstName: '', customerId: ''})} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:bg-gray-200 rounded-full transition-colors"><Icons.X className="w-4 h-4" /></button>
                           )}
                        </div>
-                       <div className="relative w-[35%]">
+                       <div className="relative w-[60%]">
                           <input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} placeholder="Last"
                             className="w-full rounded-xl py-2.5 px-3 pr-8 text-lg font-bold bg-[#F6EFE9] border-transparent focus:bg-white focus:border-[#8B5A2B] border outline-none" />
                           {formData.lastName && (
@@ -1401,19 +1423,21 @@ export default function App() {
                      )}
                   </div>
                   
-                  <div className="col-span-3 flex flex-col">
+                  <div className="col-span-5 flex flex-col">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">客源狀態 (Client Status)</label>
                      <div className="flex gap-1 h-[46px]">
-                       <div className="flex bg-[#F6EFE9] rounded-xl p-1 w-[45%]">
+                       <div className="flex bg-[#F6EFE9] rounded-xl p-1 w-[40%]">
                           <button type="button" onClick={() => handleInputChange('clientType', 'New')} className={`flex-1 rounded-lg font-bold text-sm transition-all ${formData.clientType === 'New' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-400'}`}>新客</button>
                           <button type="button" onClick={() => handleInputChange('clientType', 'Repeated')} className={`flex-1 rounded-lg font-bold text-sm transition-all ${formData.clientType === 'Repeated' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-400'}`}>舊客</button>
                        </div>
                        {formData.clientType === 'New' && (
-                         <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[55%] bg-[#F6EFE9] border-transparent rounded-xl px-1 text-xs font-bold outline-none focus:border-[#8B5A2B] border">
+                         <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[60%] bg-[#F6EFE9] border-transparent rounded-xl px-1 text-xs font-bold outline-none focus:border-[#8B5A2B] border">
                            <option value="Walk-in">Walk-in</option>
                            <option value="Referral">朋友介紹</option>
                            <option value="Google">Google</option>
                            <option value="IG/Facebook">IG/FB</option>
+                           <option value="酒店客">酒店客</option>
+                           <option value="小紅書">小紅書</option>
                          </select>
                        )}
                      </div>
@@ -1774,7 +1798,7 @@ export default function App() {
                                     <div className="font-black text-[#4A2511] text-xl">${client.totalSpent}</div>
                                     <div className="text-sm font-bold text-gray-400">{client.visitCount} 次</div>
                                  </td>
-                                 <td className="p-4 text-base font-bold text-gray-600">{client.latestVisitDate}</td>
+                                 <td className="p-4 text-base font-bold text-gray-600">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : client.latestVisitDate}</td>
                                  <td className="p-4"><span className="text-sm font-bold text-white px-3 py-1 rounded" style={{ backgroundColor: STYLIST_THEMES[client.preferredStylist]?.hex || '#595959' }}>{client.preferredStylist}</span></td>
                                  <td className="p-4 flex items-center space-x-2">
                                     <button onClick={() => { playAudioFeedback('click'); setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]})); }} 
@@ -2027,9 +2051,9 @@ export default function App() {
                 </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[450px]">
               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈 (受上方期間連動)</h3>
+                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈</h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
@@ -2060,6 +2084,30 @@ export default function App() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
+              </div>
+
+              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
+                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">新客來源分佈</h3>
+                {dashboardData.sourceChart.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={dashboardData.sourceChart}
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({name, percent}) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                        labelLine={false}
+                      >
+                        {dashboardData.sourceChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => [`${value} 人`, '數量']} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無新客數據</div>}
               </div>
             </div>
 
