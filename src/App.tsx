@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 
 const Icons = {
   Check: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>,
@@ -46,7 +46,7 @@ const STYLIST_THEMES = {
   'Others': { hex: '#595959', light: '#59595915', shadow: 'rgba(89, 89, 89, 0.3)' }
 };
 
-const CHART_COLORS = ['#6D3A14', '#9F3E3E', '#2C496A', '#C4A485', '#595959', '#A87C51', '#855E42', '#3D2B1F'];
+const CHART_COLORS = ['#6D3A14', '#9F3E3E', '#2C496A', '#C4A485', '#595959'];
 const chemicalKeywords = ['電', '染', '漂', 'Keratin', 'Perm', 'Color', 'Highlight', 'Touch', 'Bleach'];
 const scalpNotes = ['正常', '偏油性', '偏乾性', '敏感性頭皮', '髮質偏幼細', '嚴重受損髮質', '抗拒染膏'];
 const defaultInterests = ['白頭髮遮蓋', '想試染髮', '有機/天然品牌', '縮毛矯正', '受損髮質修護'];
@@ -135,44 +135,31 @@ const playAudioFeedback = (type) => {
   }
 };
 
-// ==========================================
-// V12.6.9 強化的日期解析函式 (解決 Google Sheet 怪異日期格式導致的 Bug)
-// ==========================================
 const parseDateFlexible = (dateStr) => {
   if (!dateStr) return '';
   try {
     const cleanStr = String(dateStr).trim();
-    // 1. 如果包含 T (例如 2026-07-20T16:00:00.000Z)，直接轉換成本地日期
-    if (cleanStr.includes('T') || cleanStr.includes('Z')) {
-       const d = new Date(cleanStr);
-       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-    
-    // 2. 嘗試使用原生 Date 解析 (支援 7/20/2026 等格式)
     let d = new Date(cleanStr);
-    if (!isNaN(d.getTime())) {
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
+    const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ydmMatch) {
+        if (parseInt(ydmMatch[2]) > 12 && parseInt(ydmMatch[3]) <= 12) {
+           d = new Date(`${ydmMatch[1]}-${ydmMatch[3]}-${ydmMatch[2]}`);
+           if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
+        }
     }
-
-    // 3. 處理特殊的中文格式
     const zhMatch = cleanStr.match(/(\d{1,2})月(\d{1,2})日(\d{4})/);
     if (zhMatch) return `${zhMatch[3]}-${zhMatch[1].padStart(2, '0')}-${zhMatch[2].padStart(2, '0')}`;
-    
-    // 4. 已經是 YYYY-MM-DD
-    const ydmMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (ydmMatch) return cleanStr;
-    
-    // 5. fallback
     return cleanStr.split(' ')[0];
   } catch (e) {
-    return String(dateStr).split(' ')[0];
+    return String(dateStr);
   }
 };
 
 const formatShortDate = parseDateFlexible;
 const getWaLink = (phone) => {
   if (!phone) return '#';
-  const digits = phone.replace(/\D/g, '');
+  const digits = String(phone).replace(/\D/g, '');
   if (digits.length === 8) return `https://wa.me/852${digits}`;
   return `https://wa.me/${digits}`;
 };
@@ -183,12 +170,32 @@ const getFullName = (record) => {
   return record.name || 'Unknown';
 };
 
-// AUTO FILL GOOGLE APP SCRIPT DEFAULT URL (V12.6.9 Pro)
-const DEFAULT_CRM_API_URL = 'https://script.google.com/macros/s/AKfycbwLCVTWXuMmUx3-XM18RcRbySm08cZlRTGdJSn8RmTedtNAQyjjR6pPQhHD8nDx9njWug/exec';
-const DEFAULT_CALENDAR_API_URL = 'https://script.google.com/macros/s/AKfycbwkJ5cLdYjXyVlRdAwGMBjMdJinl2ilMGEBy_OEi6yOk2V_O06Lz2j8ce8jw_NIx4DoPQ/exec';
+const parsePriceRobust = (val) => {
+    if (!val) return 0;
+    const num = Number(String(val).replace(/[^0-9.-]+/g, ""));
+    return isNaN(num) ? 0 : num;
+};
+
+const cleanStylistName = (name) => {
+    return name ? String(name).trim() : 'Others';
+};
+
+// Data Sanitizer: Cleans raw history records to ensure accurate charts.
+const sanitizeHistoryData = (rawData) => {
+  return rawData.map(record => {
+    const cleanStylist = record.stylist ? String(record.stylist).trim() : 'Unknown';
+    let cleanPrice = 0;
+    if (record.price) {
+      const priceString = String(record.price).replace(/["'$,\s]/g, '');
+      cleanPrice = Number(priceString);
+      if (isNaN(cleanPrice)) cleanPrice = 0;
+    }
+    return { ...record, stylist: cleanStylist, price: cleanPrice };
+  });
+};
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('scheduler'); 
+  const [activeTab, setActiveTab] = useState('dashboard'); 
   const [crmViewMode, setCrmViewMode] = useState('cards'); 
   const [crmSortBy, setCrmSortBy] = useState('latestVisit'); 
   const [crmSearchQuery, setCrmSearchQuery] = useState(''); 
@@ -212,9 +219,9 @@ export default function App() {
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Cloud Sync State - With Default API URLs and version bumping to force updates
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v1269') || DEFAULT_CRM_API_URL);
-  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v1269') || DEFAULT_CALENDAR_API_URL);
+  // Cloud Sync State
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v12') || 'https://script.google.com/macros/s/AKfycbwLCVTWXuMmUx3-XM18RcRbySm08cZlRTGdJSn8RmTedtNAQyjjR6pPQhHD8nDx9njWug/exec');
+  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v12') || 'https://script.google.com/macros/s/AKfycbwkJ5cLdYjXyVlRdAwGMBjMdJinl2ilMGEBy_OEi6yOk2V_O06Lz2j8ce8jw_NIx4DoPQ/exec');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Scheduler State
@@ -228,20 +235,27 @@ export default function App() {
   const [schedFilterStylist, setSchedFilterStylist] = useState('All');
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // API URL Builders with Cache Busting
-  const getApiUrl = (action, baseUrl) => {
+  // Dashboard & Metric States
+  const [dashboardPeriod, setDashboardPeriod] = useState('month');
+  const [dashboardDateRef, setDashboardDateRef] = useState(new Date());
+  const [dashboardStartDate, setDashboardStartDate] = useState('');
+  const [dashboardEndDate, setDashboardEndDate] = useState('');
+  const [marketingMetrics, setMarketingMetrics] = useState(() => {
+    const saved = localStorage.getItem('headline_marketing_metrics_v2');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const getApiUrl = (baseUrl, action) => {
     if (!baseUrl) return '';
     try {
         const url = new URL(baseUrl);
         url.searchParams.set('action', action);
-        url.searchParams.set('t', Date.now()); // 打破瀏覽器快取
         return url.toString();
     } catch (e) {
-        return `${baseUrl}?action=${action}&t=${Date.now()}`;
+        return `${baseUrl}?action=${action}`;
     }
   };
 
-  // Settings State
   const [hairServices, setHairServices] = useState(() => {
     const saved = localStorage.getItem('headline_services_v11');
     return saved ? JSON.parse(saved) : defaultServices;
@@ -252,9 +266,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('headline_services_v11', JSON.stringify(hairServices));
-  }, [hairServices]);
+  useEffect(() => { localStorage.setItem('headline_services_v11', JSON.stringify(hairServices)); }, [hairServices]);
+  useEffect(() => { localStorage.setItem('headline_drive_api_v12', driveApiUrl); }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_calendar_api_v12', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_marketing_metrics_v2', JSON.stringify(marketingMetrics)); }, [marketingMetrics]);
   
   const generateServiceId = (isRetailOnly = false) => {
     const prefix = isRetailOnly ? 'R-' : 'S-';
@@ -310,6 +325,7 @@ export default function App() {
     customInterest: '',
     notes: '',
     photoLink: '',
+    nextSuggest: '',
     _eventId: null,
     _stylist: null
   });
@@ -323,7 +339,7 @@ export default function App() {
   const [showReferralSuggest, setShowReferralSuggest] = useState(false);
   const [referralSuggests, setReferralSuggests] = useState([]);
 
-  const [historyRecords, setHistoryRecords] = useState(() => {
+  const [rawHistoryRecords, setRawHistoryRecords] = useState(() => {
     const saved = localStorage.getItem('headline_salon_history_v11');
     if (saved) {
        try {
@@ -334,21 +350,11 @@ export default function App() {
     return [];
   });
 
-  const [historicalRevenue, setHistoricalRevenue] = useState(() => {
-    const saved = localStorage.getItem('headline_historical_rev');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const historyRecords = useMemo(() => sanitizeHistoryData(rawHistoryRecords), [rawHistoryRecords]);
 
-  const [dashboardPeriod, setDashboardPeriod] = useState('month');
-  const [dashboardStartDate, setDashboardStartDate] = useState('');
-  const [dashboardEndDate, setDashboardEndDate] = useState('');
-  const [revenueMonths, setRevenueMonths] = useState(6);
   const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
 
-  useEffect(() => { localStorage.setItem('headline_historical_rev', JSON.stringify(historicalRevenue)); }, [historicalRevenue]);
-  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(historyRecords)); }, [historyRecords]);
-  useEffect(() => { localStorage.setItem('headline_drive_api_v1269', driveApiUrl); }, [driveApiUrl]);
-  useEffect(() => { localStorage.setItem('headline_calendar_api_v1269', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(rawHistoryRecords)); }, [rawHistoryRecords]);
 
   const triggerNotification = (msg) => {
     setNotification(msg);
@@ -401,34 +407,24 @@ export default function App() {
     setFormData(prev => ({ ...prev, price: finalPrice.toString() }));
   }, [formData.subtotal, formData.retailPrice, formData.discountPct]);
 
-  const fetchCalendarEvents = async (showNotification = false) => {
-    if (!calendarApiUrl) {
-        if (showNotification) triggerNotification('❌ 請先至資料中心設定 Calendar API 網址');
-        return;
-    }
+  const fetchCalendarEvents = async () => {
+    if (!calendarApiUrl) return;
     setIsCalendarLoading(true);
     try {
-      const fetchUrl = getApiUrl('get_events', calendarApiUrl);
-      
-      const response = await fetch(fetchUrl, { redirect: 'follow' });
+      const response = await fetch(getApiUrl(calendarApiUrl, 'get_events'));
       const result = await response.json();
-      
       if (result.status === 'success' && result.data) {
         setCalendarEvents(result.data);
-        if (showNotification) triggerNotification('✅ 日曆預約已成功更新！');
-      } else {
-        if (showNotification) triggerNotification('❌ 拉取失敗，請確認 Google Apps Script 設定');
       }
     } catch (err) {
       console.warn("Calendar load failed", err);
-      if (showNotification) triggerNotification('❌ 同步失敗 (網路阻擋或快取異常)');
     } finally {
       setIsCalendarLoading(false);
     }
   };
 
   useEffect(() => {
-    if(calendarApiUrl) fetchCalendarEvents();
+    fetchCalendarEvents();
   }, [calendarApiUrl]);
 
   const checkConflict = (stylist, dateStr, timeStr, durationMins, excludeEventId = null) => {
@@ -464,7 +460,7 @@ export default function App() {
     const fakeId = schedAddEditModal.id || ('evt_' + Date.now());
 
     const payload = {
-        action: 'create', 
+        action: 'create_event', 
         stylist: schedAddEditModal.stylist,
         title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`,
         description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes,
@@ -490,19 +486,19 @@ export default function App() {
     playAudioFeedback('success');
 
     if (!calendarApiUrl) {
-        triggerNotification('✅ 已本地新增預約 (未設定 Calendar API)');
+        triggerNotification('✅ 已本地新增預約 (未設定 API)');
         return;
     }
 
     if (schedAddEditModal.id) {
         try {
-            await fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+            await fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
         } catch(err) { console.error(err); }
     }
 
     try {
         triggerNotification('⏳ 雲端同步中...');
-        const res = await fetch(getApiUrl('create', calendarApiUrl), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+        const res = await fetch(getApiUrl(calendarApiUrl, 'create_event'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
         const result = await res.json();
         if (result.status === 'success') {
             triggerNotification('✅ 預約已成功同步至 Google 日曆！');
@@ -522,13 +518,13 @@ export default function App() {
     playAudioFeedback('success');
 
     if (!calendarApiUrl) {
-        triggerNotification('✅ 已本地刪除預約 (未設定 Calendar API)');
+        triggerNotification('✅ 已本地刪除預約 (未設定 API)');
         return;
     }
 
     try {
         triggerNotification('⏳ 雲端刪除中...');
-        await fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); 
+        await fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: aptDeleteConfirm.stylist, eventId: aptDeleteConfirm.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); 
         triggerNotification('✅ 已從 Google 日曆刪除');
         fetchCalendarEvents();
     } catch(e) { triggerNotification('❌ 雲端刪除失敗'); }
@@ -565,21 +561,16 @@ export default function App() {
       }
       
       const p = profiles[key];
-      
-      // 確保排除「建立檔案」等非實際消費紀錄
-      const isActualVisit = !record.isProfileOnly && record.services !== '建立檔案' && record.services !== '系統匯入';
-
-      if (isActualVisit) {
+      if (!record.isProfileOnly) {
           p.visitCount += 1;
-          p.totalSpent += parseInt(record.price) || 0;
+          p.totalSpent += record.price; // Already sanitized
           p.visits.push(record);
       }
       
-      // V12.6.9 Pro: 透過強化的 parseDateFlexible 確保比較正確
       const recDate = formatShortDate(record.date);
-      if (recDate && recDate > p.latestVisitDate && isActualVisit) {
+      if (recDate && recDate > p.latestVisitDate && !record.isProfileOnly) {
         p.latestVisitDate = recDate;
-        p.preferredStylist = record.stylist;
+        p.preferredStylist = cleanStylistName(record.stylist);
         if (record.formula) p.latestFormula = record.formula;
         
         if (record.services) {
@@ -637,97 +628,195 @@ export default function App() {
     return result;
   }, [historyRecords, crmSortBy]);
 
+  const getPeriodRange = (period, date, offset) => {
+    const d = new Date(date);
+    if (period === 'day') {
+        d.setDate(d.getDate() + offset);
+        const start = new Date(d.setHours(0,0,0,0));
+        const end = new Date(d.setHours(23,59,59,999));
+        return { start, end, label: start.toLocaleDateString('zh-TW', {month:'short', day:'numeric'}) };
+    }
+    if (period === 'week') {
+        d.setDate(d.getDate() + (offset * 7));
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(d.setDate(diff));
+        start.setHours(0,0,0,0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        end.setHours(23,59,59,999);
+        return { start, end, label: `${start.toLocaleDateString('zh-TW', {month:'short', day:'numeric'})} ~ ${end.toLocaleDateString('zh-TW', {month:'short', day:'numeric'})}` };
+    }
+    if (period === 'month') {
+        d.setMonth(d.getMonth() + offset);
+        const start = new Date(d.getFullYear(), d.getMonth(), 1);
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { start, end, label: `${start.getFullYear()}年${start.getMonth() + 1}月` };
+    }
+    if (period === 'year') {
+        d.setFullYear(d.getFullYear() + offset);
+        const start = new Date(d.getFullYear(), 0, 1);
+        const end = new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999);
+        return { start, end, label: `${start.getFullYear()}年` };
+    }
+    return null;
+  };
+
+  const handlePeriodChange = (dir) => {
+    playAudioFeedback('click');
+    setDashboardDateRef(prev => {
+        const d = new Date(prev);
+        if (dashboardPeriod === 'day') d.setDate(d.getDate() + dir);
+        else if (dashboardPeriod === 'week') d.setDate(d.getDate() + (dir * 7));
+        else if (dashboardPeriod === 'month') d.setMonth(d.getMonth() + dir);
+        else if (dashboardPeriod === 'year') d.setFullYear(d.getFullYear() + dir);
+        return d;
+    });
+  };
+
+  const handleMarketingChange = (field, val) => {
+    const currentMonthKey = `${dashboardDateRef.getFullYear()}-${String(dashboardDateRef.getMonth() + 1).padStart(2, '0')}`;
+    setMarketingMetrics(prev => ({
+        ...prev,
+        [currentMonthKey]: { ...(prev[currentMonthKey] || {}), [field]: parseInt(val)||0 }
+    }));
+  };
+
   const dashboardData = useMemo(() => {
-    const now = new Date();
-    const filtered = historyRecords.filter(record => {
-      if (record.isProfileOnly) return false;
-      const rDate = new Date(parseDateFlexible(record.date) || Date.now());
-      if (dashboardPeriod === 'day') return rDate.toDateString() === now.toDateString();
-      if (dashboardPeriod === 'week') { const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); return rDate >= weekAgo; }
-      if (dashboardPeriod === 'month') return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
-      if (dashboardPeriod === 'year') return rDate.getFullYear() === now.getFullYear();
-      return true;
+    const currentRange = dashboardPeriod === 'custom' 
+        ? { start: new Date(`${dashboardStartDate}T00:00:00`), end: new Date(`${dashboardEndDate}T23:59:59`), label: `${dashboardStartDate} ~ ${dashboardEndDate}` }
+        : getPeriodRange(dashboardPeriod, dashboardDateRef, 0);
+
+    const prevRange = dashboardPeriod === 'custom' ? null : getPeriodRange(dashboardPeriod, dashboardDateRef, -1);
+
+    const getMetrics = (start, end) => {
+        const records = historyRecords.filter(r => !r.isProfileOnly && new Date(parseDateFlexible(r.date)) >= start && new Date(parseDateFlexible(r.date)) <= end);
+        let rev = 0, clients = records.length, retail = 0, newCus = 0;
+        let male = 0, female = 0, en = 0, cn = 0, zh = 0;
+        let dailyMap = {};
+        let serviceMap = {};
+        let stylistRevMap = { Man: 0, Becky: 0, Sammy: 0, Others: 0 };
+        let sourceMap = {};
+        
+        records.forEach(r => {
+            const price = r.price; // Already sanitized
+            rev += price;
+            
+            const sSub = parsePriceRobust(r.subtotal);
+            const rSub = parsePriceRobust(r.retailPrice);
+            if (sSub + rSub > 0) retail += (rSub / (sSub + rSub)) * price;
+            else if (rSub > 0) retail += price;
+
+            if (r.gender === 'Male') male++; else female++;
+            
+            if (r.language === 'EN') en++;
+            else if (r.language === 'ZH') zh++;
+            else cn++;
+
+            if (r.customerSource && String(r.customerSource).includes('新客')) {
+                newCus++;
+                let source = 'Walk-in';
+                if (r.customerSource.includes('Referral')) source = '朋友介紹';
+                else if (r.customerSource.includes('IG') || r.customerSource.includes('FB')) source = 'IG/FB';
+                else if (r.customerSource.includes('Google')) source = 'Google';
+                sourceMap[source] = (sourceMap[source] || 0) + 1;
+            }
+
+            const cSty = cleanStylistName(r.stylist);
+            const sty = ['Man', 'Becky', 'Sammy'].includes(cSty) ? cSty : 'Others';
+            stylistRevMap[sty] += price;
+
+            let dateKey = '';
+            let rawDateVal = 0;
+            let isSun = false;
+            const recDate = new Date(parseDateFlexible(r.date));
+            
+            if (!isNaN(recDate.getTime())) {
+                if (dashboardPeriod === 'day') {
+                    dateKey = r.timestamp ? new Date(r.timestamp).getHours() + ':00' : 'Unknown';
+                    rawDateVal = r.timestamp ? new Date(r.timestamp).getTime() : 0;
+                } else {
+                    dateKey = `${recDate.getMonth()+1}/${recDate.getDate()}`;
+                    rawDateVal = recDate.getTime();
+                    isSun = recDate.getDay() === 0;
+                }
+                
+                if (!dailyMap[dateKey]) dailyMap[dateKey] = { time: dateKey, count: 0, revenue: 0, isSunday: isSun, rawDate: rawDateVal };
+                dailyMap[dateKey].count += 1;
+                dailyMap[dateKey].revenue += price;
+            }
+
+            const svcs = (r.services || '').split(', ');
+            svcs.forEach(s => {
+                const shortName = s.trim();
+                if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案' && shortName !== '歷史資料') {
+                    if(!serviceMap[shortName]) serviceMap[shortName] = { name: shortName, Man: 0, Becky: 0, Sammy: 0, Others: 0, total: 0 };
+                    serviceMap[shortName][sty] += 1;
+                    serviceMap[shortName].total += 1;
+                }
+            });
+        });
+
+        const dailyChart = Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate);
+        const stylistChart = Object.keys(stylistRevMap).map(k => ({ name: k, value: stylistRevMap[k] }));
+        const sourceChart = Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] }));
+
+        return { rev, clients, retail, newCus, male, female, en, cn, zh, dailyChart, serviceMap, stylistChart, sourceChart, records };
+    };
+
+    const currMetrics = getMetrics(currentRange.start, currentRange.end);
+    const prevMetrics = prevRange ? getMetrics(prevRange.start, prevRange.end) : null;
+
+    const calcChange = (curr, prev) => {
+        if (!prev || prev === 0) return curr > 0 ? 100 : 0;
+        return (((curr - prev) / Math.abs(prev)) * 100).toFixed(1);
+    };
+
+    const changes = prevMetrics ? {
+        rev: calcChange(currMetrics.rev, prevMetrics.rev),
+        clients: calcChange(currMetrics.clients, prevMetrics.clients),
+        avg: calcChange(currMetrics.clients ? currMetrics.rev/currMetrics.clients : 0, prevMetrics.clients ? prevMetrics.rev/prevMetrics.clients : 0),
+        newCus: calcChange(currMetrics.newCus, prevMetrics.newCus)
+    } : null;
+
+    const serviceChart = Object.values(currMetrics.serviceMap).sort((a,b)=>b.total-a.total).slice(0, 8);
+
+    let peak = { time: '-', count: -1, revenue: 0 }, quiet = { time: '-', count: 999999, revenue: 0 };
+    currMetrics.dailyChart.forEach(d => {
+        if (d.count > peak.count) peak = d;
+        if (d.count < quiet.count && d.count > 0) quiet = d;
     });
-
-    let totalRev = 0, retailRev = 0, maleCount = 0, enCount = 0, returningCount = 0;
-    const stylistMap = {};
-    const serviceMap = {};
-    const sourceMap = {};
-
-    filtered.forEach(r => {
-      totalRev += (parseInt(r.price) || 0);
-      const sSub = parseInt(r.subtotal) || 0;
-      const rSub = parseInt(r.retailPrice) || 0;
-      if (sSub + rSub > 0) retailRev += (rSub / (sSub + rSub)) * (parseInt(r.price) || 0);
-      else if (rSub > 0) retailRev += (parseInt(r.price) || 0);
-
-      if (r.gender === 'Male') maleCount++;
-      if (r.language === 'EN') enCount++;
-
-      const profile = crmProfiles.find(p => p.customerId === r.customerId);
-      if (profile && profile.visitCount > 1) returningCount++;
-
-      stylistMap[r.stylist] = (stylistMap[r.stylist] || 0) + (parseInt(r.price) || 0);
-      const svcs = (r.services || '').split(', ');
-      svcs.forEach(s => {
-        const shortName = s.trim();
-        if(shortName && shortName !== '系統匯入' && shortName !== '建立檔案') serviceMap[shortName] = (serviceMap[shortName] || 0) + 1;
-      });
-
-      // Extract new customer source for Donut chart
-      if (r.customerSource && r.customerSource.includes('新客')) {
-          const src = r.customerSource.replace('新客', '').replace(/[()]/g, '').trim() || '其他';
-          sourceMap[src] = (sourceMap[src] || 0) + 1;
-      }
-    });
-
-    const totalClients = filtered.length;
-    const stylistChart = Object.keys(stylistMap).map(k => ({ name: k, value: stylistMap[k] }));
-    const serviceChart = Object.keys(serviceMap).map(k => ({ name: k, count: serviceMap[k] })).sort((a,b)=>b.count-a.count).slice(0,5);
-    const sourceChart = Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })).sort((a,b)=>b.value-a.value);
-
-    const monthlyRev = {};
-    for (let i = revenueMonths - 1; i >= 0; i--) {
-       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-       const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
-       monthlyRev[mLabel] = historicalRevenue[mLabel] || 0;
-    }
-    historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
-       const d = new Date(parseDateFlexible(r.date) || Date.now());
-       const mLabel = `${d.getFullYear().toString().slice(2)}年${d.getMonth()+1}月`;
-       if (monthlyRev[mLabel] !== undefined) {
-          monthlyRev[mLabel] += (parseInt(r.price) || 0);
-       }
-    });
-    const monthlyChart = Object.keys(monthlyRev).map(k => ({ month: k, revenue: monthlyRev[k] }));
-
-    let listFiltered = historyRecords.filter(r => !r.isProfileOnly);
-    if(dashboardStartDate && dashboardEndDate) {
-       listFiltered = listFiltered.filter(r => {
-          const rd = formatShortDate(r.date);
-          return rd >= dashboardStartDate && rd <= dashboardEndDate;
-       });
-    }
+    if (quiet.count === 999999) quiet.count = 0;
+    
+    const totalLang = currMetrics.en + currMetrics.cn + currMetrics.zh;
+    const returningCus = currMetrics.clients - currMetrics.newCus;
 
     return {
-      totalRev, totalClients, retailRev, stylistChart, serviceChart, sourceChart, monthlyChart,
-      filteredRecords: listFiltered,
-      avgSpending: totalClients > 0 ? (totalRev / totalClients).toFixed(0) : 0,
-      malePct: totalClients > 0 ? ((maleCount / totalClients) * 100).toFixed(0) : 0,
-      femalePct: totalClients > 0 ? (100 - ((maleCount / totalClients) * 100)).toFixed(0) : 0,
-      enPct: totalClients > 0 ? ((enCount / totalClients) * 100).toFixed(0) : 0,
-      cnPct: totalClients > 0 ? (100 - ((enCount / totalClients) * 100)).toFixed(0) : 0,
-      retentionPct: totalClients > 0 ? ((returningCount / totalClients) * 100).toFixed(0) : 0,
-      newPct: totalClients > 0 ? (100 - ((returningCount / totalClients) * 100)).toFixed(0) : 0,
-      retailPct: totalRev > 0 ? ((retailRev / totalRev) * 100).toFixed(1) : 0
+        ...currMetrics,
+        currentRange,
+        changes,
+        serviceChart,
+        peak,
+        quiet,
+        avgSpending: currMetrics.clients > 0 ? (currMetrics.rev / currMetrics.clients).toFixed(0) : 0,
+        retailPct: currMetrics.rev > 0 ? ((currMetrics.retail / currMetrics.rev) * 100).toFixed(1) : 0,
+        malePct: currMetrics.clients > 0 ? ((currMetrics.male / currMetrics.clients) * 100).toFixed(0) : 0,
+        femalePct: currMetrics.clients > 0 ? ((currMetrics.female / currMetrics.clients) * 100).toFixed(0) : 0,
+        enPct: totalLang > 0 ? ((currMetrics.en / totalLang) * 100).toFixed(0) : 0,
+        zhPct: totalLang > 0 ? ((currMetrics.zh / totalLang) * 100).toFixed(0) : 0,
+        cnPct: totalLang > 0 ? ((currMetrics.cn / totalLang) * 100).toFixed(0) : 0,
+        newCusPct: currMetrics.clients > 0 ? ((currMetrics.newCus / currMetrics.clients) * 100).toFixed(0) : 0,
+        retCusPct: currMetrics.clients > 0 ? ((returningCus / currMetrics.clients) * 100).toFixed(0) : 0,
     };
-  }, [historyRecords, dashboardPeriod, revenueMonths, crmProfiles, dashboardStartDate, dashboardEndDate, historicalRevenue]);
+  }, [historyRecords, dashboardPeriod, dashboardDateRef, dashboardStartDate, dashboardEndDate]);
+
+  const currentMonthKey = `${dashboardDateRef.getFullYear()}-${String(dashboardDateRef.getMonth() + 1).padStart(2, '0')}`;
 
   const auditData = useMemo(() => {
      const issues = [];
      historyRecords.forEach(r => {
         if(!r.isProfileOnly) {
-           if(parseInt(r.price) === 0 && r.services !== '建立檔案') {
+           if(r.price === 0 && r.services !== '建立檔案' && r.services !== '歷史資料') {
               issues.push({ type: 'zero_price', label: '零元消費紀錄', record: r, msg: '消費金額為 0 元' });
            }
            if(!r.services || r.services.trim() === '') {
@@ -817,27 +906,8 @@ export default function App() {
 
   const handleSubmitCheckout = (e) => {
     e.preventDefault();
-    if (!formData.firstName && !formData.lastName) {
-        playAudioFeedback('warn');
-        return triggerNotification('請輸入姓名！');
-    }
-    
-    // Strict amount checking
-    const numericPrice = parseInt(formData.price);
-    if (isNaN(numericPrice) || numericPrice === 0) {
-        if (formData.discountPct !== '100') {
-            playAudioFeedback('warn');
-            return triggerNotification('⚠️ 總結金額不可為 0，請確認填寫正確！');
-        }
-    }
-
-    // Strict service checking
-    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
-    const hasRetail = formData.retailItems.trim() !== '' || parseInt(formData.retailPrice) > 0;
-    if (!hasServices && !hasRetail) {
-        playAudioFeedback('warn');
-        return triggerNotification('⚠️ 結帳失敗：必須至少選擇一項服務或填寫零售產品！');
-    }
+    if (!formData.firstName && !formData.lastName) return triggerNotification('請輸入姓名！');
+    if (!formData.price) return triggerNotification('請確認總結金額！');
 
     setSubmitting(true);
     const isNew = formData.clientType === 'New';
@@ -845,15 +915,17 @@ export default function App() {
     let finalSource = formData.sourceDetail || 'Walk-in';
 
     if (isNew && !finalCustomerId) {
-       finalCustomerId = getNextCustomerId(historyRecords);
+       finalCustomerId = getNextCustomerId(rawHistoryRecords);
        finalSource = `新客 (${formData.sourceDetail})`;
     } else if (formData.clientType === 'Repeated' && !finalCustomerId) {
-       finalCustomerId = getNextCustomerId(historyRecords);
+       finalCustomerId = getNextCustomerId(rawHistoryRecords);
        finalSource = '舊客 (數位首建)';
     } else if (formData.clientType === 'Repeated') {
        finalSource = '舊客 (Repeated)';
     }
 
+    const hasServices = formData.selectedServices.length > 0 || formData.customService.trim() !== '';
+    const hasRetail = formData.retailItems.trim() !== '' || parsePriceRobust(formData.retailPrice) > 0;
     const isRetailOnly = !hasServices && hasRetail;
 
     const finalRecord = {
@@ -869,16 +941,15 @@ export default function App() {
     };
 
     setTimeout(async () => {
-      setHistoryRecords(prev => [finalRecord, ...prev]);
+      setRawHistoryRecords(prev => [finalRecord, ...prev]);
       
       if (driveApiUrl) {
-        try { fetch(getApiUrl('append', driveApiUrl), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch(err) {}
+        try { fetch(getApiUrl(driveApiUrl, 'append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch(err) {}
       }
       
       if (formData._eventId && formData._stylist && calendarApiUrl) {
-        try { fetch(getApiUrl('delete', calendarApiUrl), { method: 'POST', body: JSON.stringify({ action: 'delete', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); } catch (e) {}
+        try { fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: formData._stylist, eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch (e) {}
       }
-
       setSubmitting(false);
       playAudioFeedback('cashier');
       setShowSuccessModal(true);
@@ -890,54 +961,6 @@ export default function App() {
     }, 400); 
   };
 
-  const handleCloudRefresh = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 CRM Google Sheet API 網址！');
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    try {
-      const fetchUrl = getApiUrl('sync_pull', driveApiUrl);
-      
-      const res = await fetch(fetchUrl, { redirect: 'follow' });
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        const validData = data.filter(r => r && r.serviceId);
-        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setHistoryRecords(validData);
-        playAudioFeedback('success');
-        triggerNotification(`🔄 已成功同步 CRM 雲端最新資料庫！`);
-      } else throw new Error('Format issue');
-    } catch(e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 同步失敗，請確認 API 網址正確或無跨域限制。');
-    }
-    setIsSyncing(false);
-  };
-
-  const handleCloudBackup = async () => {
-    if (!driveApiUrl) return triggerNotification('❌ 請先設定 CRM Google Sheet API 網址！');
-    if (historyRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
-    playAudioFeedback('click');
-    setIsSyncing(true);
-    triggerNotification('⏳ 雲端同步備份中，請稍候...');
-    try {
-      const res = await fetch(getApiUrl('sync_all', driveApiUrl), {
-        method: 'POST',
-        body: JSON.stringify({ action: 'sync_all', records: historyRecords }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        redirect: 'follow'
-      });
-      const result = await res.json();
-      if (result.status === 'success') {
-        playAudioFeedback('success');
-        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
-      } else throw new Error(result.message);
-    } catch (e) {
-      playAudioFeedback('warn');
-      triggerNotification('❌ 備份失敗，請確認 API 網址正確且具有執行權限。');
-    }
-    setIsSyncing(false);
-  };
-
   const handleJSONImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -947,7 +970,7 @@ export default function App() {
       try {
         const importedData = JSON.parse(event.target.result);
         if (Array.isArray(importedData)) {
-          setHistoryRecords(prev => {
+          setRawHistoryRecords(prev => {
             const existingIds = new Set(prev.map(r => r.serviceId));
             const newRecords = importedData
                 .map((r, i) => r.serviceId ? r : { ...r, serviceId: `S-IMP-${Date.now()}-${i}` })
@@ -983,16 +1006,17 @@ export default function App() {
     link.click();
   };
 
-  const handleTransactionCSVExport = () => { 
+  const handleTransactionCSVExport = (recordsToExport) => { 
     playAudioFeedback('click');
+    const records = recordsToExport || historyRecords.filter(r => !r.isProfileOnly);
     const headers = ['交易編號', '服務日期', '客戶編號', '姓名', '主理設計師', '客源', '介紹人', '服務項目', '零售產品', '消費總額', '支付方式', '化學配方', '備註與建議', '照片連結'];
     const csvRows = [headers.join(',')];
-    historyRecords.filter(r => !r.isProfileOnly).forEach(r => {
+    records.forEach(r => {
         const safeServices = (r.services || '').replace(/"/g, '""');
         const safeRetail = (r.retailItems || '').replace(/"/g, '""');
         const safeFormula = (r.formula || '').replace(/"/g, '""');
         const safeNotes = (r.notes || '').trim().replace(/"/g, '""');
-        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), r.stylist, r.customerSource, `"${r.referredBy || ''}"`, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
+        const row = [ r.serviceId, formatShortDate(r.date), r.customerId, getFullName(r), cleanStylistName(r.stylist), r.customerSource, `"${r.referredBy || ''}"`, `"${safeServices}"`, `"${safeRetail}"`, r.price, r.paymentMethod || 'Cash', `"${safeFormula}"`, `"${safeNotes}"`, r.photoLink || '' ];
         csvRows.push(row.join(','));
     });
     const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -1005,7 +1029,7 @@ export default function App() {
 
   const handleJSONExport = () => {
     playAudioFeedback('click');
-    const dataStr = JSON.stringify(historyRecords, null, 2);
+    const dataStr = JSON.stringify(rawHistoryRecords, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1015,8 +1039,52 @@ export default function App() {
     triggerNotification('✅ 系統備份檔案已成功下載！');
   };
 
-  const handleCloudRestore = async () => { handleCloudRefresh(); };
-  const handleResetDatabase = () => { setHistoryRecords([]); setShowResetConfirm(false); triggerNotification('⚠️ 系統已清空。'); };
+  const handleCloudRefresh = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先至資料中心設定 Google Sheet API 網址！');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    try {
+      const res = await fetch(getApiUrl(driveApiUrl, 'sync_pull'));
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        const validData = data.filter(r => r && r.serviceId);
+        validData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setRawHistoryRecords(validData);
+        playAudioFeedback('success');
+        triggerNotification(`🔄 已成功同步雲端最新資料庫！`);
+      } else throw new Error('Format issue');
+    } catch(e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 同步失敗，請確認 API 網址正確。');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleCloudBackup = async () => {
+    if (!driveApiUrl) return triggerNotification('❌ 請先設定 Google Sheet API 網址！');
+    if (rawHistoryRecords.length === 0) return triggerNotification('❌ 系統目前無資料可備份。');
+    playAudioFeedback('click');
+    setIsSyncing(true);
+    triggerNotification('⏳ 雲端同步備份中，請稍候...');
+    try {
+      const res = await fetch(getApiUrl(driveApiUrl, 'sync_all'), {
+        method: 'POST',
+        body: JSON.stringify({ action: 'sync_all', records: rawHistoryRecords }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      });
+      const result = await res.json();
+      if (result.status === 'success') {
+        playAudioFeedback('success');
+        triggerNotification('☁️✅ 成功！全站資料已安全覆蓋至 Google Sheet！');
+      } else throw new Error(result.message);
+    } catch (e) {
+      playAudioFeedback('warn');
+      triggerNotification('❌ 備份失敗，請確認 API 網址。');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleResetDatabase = () => { setRawHistoryRecords([]); setShowResetConfirm(false); triggerNotification('⚠️ 系統已清空。'); };
 
   const handleNameSearchInput = (e) => {
     const val = e.target.value;
@@ -1047,10 +1115,28 @@ export default function App() {
     }
   };
 
+  const handleSelectReferralSuggest = (profile) => {
+      setFormData(prev => ({...prev, referredBy: profile.fullName})); 
+      setShowReferralSuggest(false);
+  };
+
   const showBirthday = formData.clientType === 'New' || (!formData.birthMonth && formData.clientType === 'Repeated');
   const currentProfile = useMemo(() => {
      return formData.customerId ? crmProfiles.find(p => p.customerId === formData.customerId) : null;
   }, [formData.customerId, crmProfiles]);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-[#E8DCC8] rounded-xl shadow-lg">
+          <p className="font-bold text-[#4A2511] mb-1">{label}</p>
+          <p className="text-[#8B5A2B] font-bold">客數: {payload[0].payload.count} 人</p>
+          <p className="text-emerald-600 font-bold">營收: ${payload[0].payload.revenue.toLocaleString()}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="h-screen flex flex-col font-sans selection:bg-[#E8DCC8] selection:text-[#4A2511] overflow-hidden bg-[#F6EFE9] text-[#4A2511]">
@@ -1066,14 +1152,11 @@ export default function App() {
         <div className="flex items-center space-x-8">
           <div className="flex flex-col items-start justify-center select-none pt-1">
             <h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.6.9 Pro</span>
+                HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v12.7.9 Pro</span>
             </h1>
             <span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="flex space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
+          <div className="flex items-center space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
             {[
               { id: 'scheduler', icon: Icons.Calendar, label: '預約排程' },
               { id: 'checkout', icon: Icons.Gift, label: '現場結帳' },
@@ -1089,11 +1172,11 @@ export default function App() {
                 <tab.icon /> <span>{tab.label}</span>
               </button>
             ))}
+            <div className="w-px h-8 bg-[#E8DCC8] mx-2"></div>
+            <button onClick={handleCloudRefresh} title="全站同步" className="p-2.5 text-gray-500 hover:bg-white rounded-xl transition-colors">
+                <Icons.Refresh className={isSyncing ? "animate-spin text-[#8B5A2B]" : ""} />
+            </button>
           </div>
-          
-          <button onClick={handleCloudRefresh} disabled={isSyncing} className="bg-[#8B5A2B] text-white p-3 rounded-xl hover:bg-[#6D3A14] transition-colors shadow-md" title="從雲端拉取最新 CRM 客戶資料">
-             <Icons.Refresh className={isSyncing ? "animate-spin" : ""} />
-          </button>
         </div>
       </header>
 
@@ -1123,7 +1206,7 @@ export default function App() {
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('week'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'week' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>週</button>
                         <button onClick={() => { playAudioFeedback('click'); setSchedViewMode('month'); }} className={`px-5 rounded-xl font-bold transition-all ${schedViewMode === 'month' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-500'}`}>月</button>
                       </div>
-                      <button onClick={() => { playAudioFeedback('click'); triggerNotification('🔄 正在從 Google 日曆拉取最新預約...'); fetchCalendarEvents(true); }} 
+                      <button onClick={() => { playAudioFeedback('click'); fetchCalendarEvents(); }} 
                         className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors shadow-sm">
                          <Icons.Refresh className={isCalendarLoading ? "animate-spin" : ""} /> <span>同步日曆</span>
                       </button>
@@ -1184,7 +1267,7 @@ export default function App() {
                                const dayEvents = calendarEvents.filter(e => {
                                   const eDate = new Date(e.startTime);
                                   if(isNaN(eDate.getTime())) return false;
-                                  return e.stylist === stylist && eDate.toLocaleDateString('en-CA') === dateStr;
+                                  return cleanStylistName(e.stylist) === stylist && eDate.toLocaleDateString('en-CA') === dateStr;
                                });
                                return (
                                   <div key={stylist} className="flex-1 min-w-[200px] border-r-2 border-[#E8DCC8] relative bg-white">
@@ -1254,7 +1337,7 @@ export default function App() {
                                       {visibleStylists.map(stylist => {
                                          const dayEvents = calendarEvents.filter(e => {
                                              const eD = new Date(e.startTime);
-                                             return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateString && e.stylist === stylist;
+                                             return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateString && cleanStylistName(e.stylist) === stylist;
                                          }).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
                                          
                                          return (
@@ -1330,7 +1413,7 @@ export default function App() {
                                        const isToday = dateStr === new Date().toLocaleDateString('en-CA');
                                        const dayEvents = calendarEvents.filter(e => {
                                            const eD = new Date(e.startTime);
-                                           return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateStr && visibleStylists.includes(e.stylist);
+                                           return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateStr && visibleStylists.includes(cleanStylistName(e.stylist));
                                        });
                                        
                                        return (
@@ -1342,12 +1425,13 @@ export default function App() {
                                                    {dayEvents.slice(0, 5).map((evt, i) => {
                                                        const eTime = new Date(evt.startTime).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:false});
                                                        const cName = (evt.title.split('|')[0] || '').trim();
+                                                       const styName = cleanStylistName(evt.stylist);
                                                        return (
                                                            <div key={i} className="text-[10px] truncate px-1.5 py-0.5 rounded font-bold cursor-pointer" 
-                                                                style={{ backgroundColor: STYLIST_THEMES[evt.stylist].light, color: STYLIST_THEMES[evt.stylist].hex }}
+                                                                style={{ backgroundColor: STYLIST_THEMES[styName]?.light, color: STYLIST_THEMES[styName]?.hex }}
                                                                 onClick={() => {
                                                                     const parts = evt.title.split('|');
-                                                                    setSchedDetailModal({ id: evt.id, stylist: evt.stylist, clientName: cName, service: parts[1]?.trim()||'', time: eTime, duration:60, date: dateStr, notes: evt.description });
+                                                                    setSchedDetailModal({ id: evt.id, stylist: styName, clientName: cName, service: parts[1]?.trim()||'', time: eTime, duration:60, date: dateStr, notes: evt.description });
                                                                 }}>
                                                                {eTime} {cName}
                                                            </div>
@@ -1387,19 +1471,18 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* V12.6.9 Pro: Layout Update for Name and Source */}
                 <div className="grid grid-cols-12 gap-4 mb-4 relative">
-                  <div className="col-span-5 relative">
+                  <div className="col-span-7 relative">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">顧客姓名 (Name)</label>
                      <div className="flex space-x-2">
-                       <div className="relative w-[40%]">
+                       <div className="relative w-[65%]">
                           <input type="text" value={formData.firstName} onChange={handleNameSearchInput} onBlur={() => setTimeout(() => setShowNameSuggest(false), 200)} required placeholder="First (搜尋...)"
                             className="w-full rounded-xl py-2.5 px-3 pr-8 text-lg font-black bg-[#F6EFE9] border-transparent focus:bg-white focus:border-[#8B5A2B] border outline-none transition-colors" />
                           {formData.firstName && (
                              <button type="button" onClick={() => setFormData({...formData, firstName: '', customerId: ''})} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:bg-gray-200 rounded-full transition-colors"><Icons.X className="w-4 h-4" /></button>
                           )}
                        </div>
-                       <div className="relative w-[60%]">
+                       <div className="relative w-[35%]">
                           <input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} placeholder="Last"
                             className="w-full rounded-xl py-2.5 px-3 pr-8 text-lg font-bold bg-[#F6EFE9] border-transparent focus:bg-white focus:border-[#8B5A2B] border outline-none" />
                           {formData.lastName && (
@@ -1423,21 +1506,19 @@ export default function App() {
                      )}
                   </div>
                   
-                  <div className="col-span-5 flex flex-col">
+                  <div className="col-span-3 flex flex-col">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">客源狀態 (Client Status)</label>
                      <div className="flex gap-1 h-[46px]">
-                       <div className="flex bg-[#F6EFE9] rounded-xl p-1 w-[40%]">
+                       <div className="flex bg-[#F6EFE9] rounded-xl p-1 w-[45%]">
                           <button type="button" onClick={() => handleInputChange('clientType', 'New')} className={`flex-1 rounded-lg font-bold text-sm transition-all ${formData.clientType === 'New' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-400'}`}>新客</button>
                           <button type="button" onClick={() => handleInputChange('clientType', 'Repeated')} className={`flex-1 rounded-lg font-bold text-sm transition-all ${formData.clientType === 'Repeated' ? 'bg-white shadow text-[#4A2511]' : 'text-gray-400'}`}>舊客</button>
                        </div>
                        {formData.clientType === 'New' && (
-                         <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[60%] bg-[#F6EFE9] border-transparent rounded-xl px-1 text-xs font-bold outline-none focus:border-[#8B5A2B] border">
+                         <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[55%] bg-[#F6EFE9] border-transparent rounded-xl px-1 text-xs font-bold outline-none focus:border-[#8B5A2B] border">
                            <option value="Walk-in">Walk-in</option>
                            <option value="Referral">朋友介紹</option>
                            <option value="Google">Google</option>
                            <option value="IG/Facebook">IG/FB</option>
-                           <option value="酒店客">酒店客</option>
-                           <option value="小紅書">小紅書</option>
                          </select>
                        )}
                      </div>
@@ -1451,10 +1532,7 @@ export default function App() {
                              {showReferralSuggest && referralSuggests.length > 0 && (
                                 <div className="absolute z-50 top-[100%] mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl max-h-40 overflow-y-auto">
                                    {referralSuggests.map(p => (
-                                     <div key={p.customerId} onMouseDown={() => {
-                                         setFormData(prev => ({...prev, referredBy: p.fullName}));
-                                         setShowReferralSuggest(false);
-                                     }} className="px-3 py-2 border-b last:border-0 hover:bg-yellow-50 cursor-pointer flex justify-between items-center text-xs">
+                                     <div key={p.customerId} onMouseDown={() => handleSelectReferralSuggest(p)} className="px-3 py-2 border-b last:border-0 hover:bg-yellow-50 cursor-pointer flex justify-between items-center text-xs">
                                        <div>
                                          <span className="font-black text-[#4A2511]">{p.fullName}</span>
                                          {p.phone && <span className="ml-2 text-gray-400">{p.phone}</span>}
@@ -1470,7 +1548,7 @@ export default function App() {
 
                   <div className="col-span-2">
                      <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-500">客戶 ID</label>
-                     <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(historyRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} placeholder="C0001" className={`w-full border rounded-xl py-2.5 px-1 text-lg font-bold text-center font-mono outline-none ${formData.clientType === 'New' ? 'bg-gray-50 text-gray-400' : 'bg-[#F6EFE9] focus:bg-white'}`} />
+                     <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(rawHistoryRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} placeholder="C0001" className={`w-full border rounded-xl py-2.5 px-1 text-lg font-bold text-center font-mono outline-none ${formData.clientType === 'New' ? 'bg-gray-50 text-gray-400' : 'bg-[#F6EFE9] focus:bg-white'}`} />
                   </div>
                 </div>
 
@@ -1632,7 +1710,7 @@ export default function App() {
                 <div className="mt-5">
                   <button type="button" onClick={() => { playAudioFeedback('click'); setShowNotes(!showNotes); }} 
                           className="w-full flex items-center justify-between py-4 px-6 bg-gray-50 border border-gray-200 rounded-2xl text-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
-                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結與私密備註'}</span></span>
+                      <span className="flex items-center space-x-2"><Icons.History className="w-6 h-6"/> <span>{showNotes ? '隱藏備註與照片' : '新增照片連結、備註與下次建議'}</span></span>
                       {showNotes ? <Icons.Minus /> : <Icons.Plus />}
                   </button>
                   
@@ -1650,6 +1728,10 @@ export default function App() {
                         <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">一般備註 (General Notes)</label>
                         <textarea rows={2} placeholder="輸入私密備註..." onClick={()=>playAudioFeedback('click')} value={formData.notes} onChange={(e) => handleInputChange('notes', e.target.value)}
                             className="w-full bg-white rounded-2xl p-4 text-xl font-semibold outline-none border" />
+                        
+                        <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">下次建議 (Next Suggestion)</label>
+                        <input type="text" placeholder="例: 4週後來修剪" value={formData.nextSuggest} onChange={(e) => handleInputChange('nextSuggest', e.target.value)}
+                            className="w-full bg-white border-transparent rounded-2xl py-3 px-4 text-xl font-semibold focus:outline-none focus:ring-1" />
                     </div>
                   )}
                 </div>
@@ -1795,10 +1877,10 @@ export default function App() {
                                     </div>
                                  </td>
                                  <td className="p-4 text-right">
-                                    <div className="font-black text-[#4A2511] text-xl">${client.totalSpent}</div>
+                                    <div className="font-black text-[#4A2511] text-xl">${client.totalSpent.toLocaleString()}</div>
                                     <div className="text-sm font-bold text-gray-400">{client.visitCount} 次</div>
                                  </td>
-                                 <td className="p-4 text-base font-bold text-gray-600">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : client.latestVisitDate}</td>
+                                 <td className="p-4 text-base font-bold text-gray-600">{client.latestVisitDate}</td>
                                  <td className="p-4"><span className="text-sm font-bold text-white px-3 py-1 rounded" style={{ backgroundColor: STYLIST_THEMES[client.preferredStylist]?.hex || '#595959' }}>{client.preferredStylist}</span></td>
                                  <td className="p-4 flex items-center space-x-2">
                                     <button onClick={() => { playAudioFeedback('click'); setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]})); }} 
@@ -1813,14 +1895,14 @@ export default function App() {
                                     <td colSpan={8} className="p-6">
                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                           {client.visits.map((v, vIdx) => (
-                                            <div key={vIdx} className="bg-white border p-3 rounded-2xl shadow-sm relative group/record flex flex-col justify-between" style={{ borderColor: STYLIST_THEMES[v.stylist]?.light || '#eee' }}>
+                                            <div key={vIdx} className="bg-white border p-3 rounded-2xl shadow-sm relative group/record flex flex-col justify-between" style={{ borderColor: STYLIST_THEMES[cleanStylistName(v.stylist)]?.light || '#eee' }}>
                                               <div>
                                                 <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
                                                   <div className="flex items-center gap-2">
                                                      <span>{formatShortDate(v.date)}</span>
                                                      <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{v.serviceId}</span>
                                                   </div>
-                                                  <span className="text-[#8B5A2B]">${v.price}</span>
+                                                  <span className="text-[#8B5A2B]">${parsePriceRobust(v.price).toLocaleString()}</span>
                                                 </div>
                                                 <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
                                                 {v.retailItems && <p className="text-[#8B5A2B] font-bold text-xs mb-1 flex items-center gap-1"><Icons.Cart className="w-3 h-3"/> {v.retailItems}</p>}
@@ -1911,7 +1993,7 @@ export default function App() {
                           </div>
 
                           <div className="grid grid-cols-2 gap-4 text-lg bg-[#F6EFE9]/50 p-5 rounded-2xl mb-4 border border-[#E8DCC8]">
-                            <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent}</span></div>
+                            <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent.toLocaleString()}</span></div>
                             <div>
                                <span className="text-sm text-gray-500 uppercase font-bold block mb-1">最近造訪</span>
                                <span className="font-black text-[#4A2511] text-base">
@@ -1941,7 +2023,7 @@ export default function App() {
                                          <span>{formatShortDate(v.date)}</span>
                                          <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{v.serviceId}</span>
                                       </div>
-                                      <span style={{ color: clientTheme.hex }}>${v.price}</span>
+                                      <span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span>
                                     </div>
                                     <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
                                     {v.retailItems && <p className="text-[#8B5A2B] font-bold text-xs mb-1 flex items-center gap-1"><Icons.Cart className="w-3 h-3"/> {v.retailItems}</p>}
@@ -1985,159 +2067,250 @@ export default function App() {
                   <div className="w-3 h-12 rounded-full" style={{ backgroundColor: activeTheme.hex }}></div>
                   <span>營業數據儀表板</span>
                </h2>
-               <div className="flex bg-[#F6EFE9] rounded-2xl p-1.5 h-[64px]">
-                 {['day', 'week', 'month', 'year'].map(p => (
-                   <button key={p} onClick={() => { playAudioFeedback('click'); setDashboardPeriod(p); setDashboardStartDate(''); setDashboardEndDate(''); }}
-                     className={`px-6 rounded-xl text-xl font-bold capitalize transition-all ${dashboardPeriod === p ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}
-                     style={dashboardPeriod === p ? { backgroundColor: activeTheme.hex } : {}}>
-                     {p === 'day' ? '今日' : p === 'week' ? '本週' : p === 'month' ? '本月' : '全年'}
-                   </button>
-                 ))}
+               <div className="flex items-center gap-3 flex-wrap">
+                   <div className="flex bg-[#F6EFE9] rounded-2xl p-1.5 h-[64px] border border-[#E8DCC8]">
+                     <button onClick={() => handlePeriodChange(-1)} className="px-4 text-gray-400 hover:text-[#4A2511] transition-colors"><Icons.ChevronLeft /></button>
+                     {['day', 'week', 'month', 'year'].map(p => (
+                       <button key={p} onClick={() => { playAudioFeedback('click'); setDashboardPeriod(p); setDashboardDateRef(new Date()); setDashboardStartDate(''); setDashboardEndDate(''); }}
+                         className={`px-6 rounded-xl text-xl font-bold capitalize transition-all ${dashboardPeriod === p ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}
+                         style={dashboardPeriod === p ? { backgroundColor: activeTheme.hex } : {}}>
+                         {p === 'day' ? '今日' : p === 'week' ? '本週' : p === 'month' ? '本月' : '全年'}
+                       </button>
+                     ))}
+                     <button onClick={() => handlePeriodChange(1)} className="px-4 text-gray-400 hover:text-[#4A2511] transition-colors"><Icons.ChevronRight /></button>
+                   </div>
+                   
+                   <div className="flex bg-[#F6EFE9] rounded-2xl p-1.5 h-[64px] border border-[#E8DCC8]">
+                     <button onClick={() => { playAudioFeedback('click'); setDashboardPeriod('custom'); }}
+                         className={`px-6 rounded-xl text-xl font-bold capitalize transition-all ${dashboardPeriod === 'custom' ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}
+                         style={dashboardPeriod === 'custom' ? { backgroundColor: activeTheme.hex } : {}}>
+                         自訂日期
+                     </button>
+                   </div>
                </div>
             </div>
+
+            {dashboardPeriod === 'custom' && (
+                <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex items-center gap-4 animate-in slide-in-from-top-2">
+                    <span className="font-bold text-[#4A2511] text-lg">選擇自訂區間：</span>
+                    <input type="date" value={dashboardStartDate} onChange={e=>setDashboardStartDate(e.target.value)} className="bg-[#F6EFE9] border border-[#E8DCC8] rounded-xl px-4 py-3 font-bold outline-none" />
+                    <span className="text-gray-400 font-bold">~</span>
+                    <input type="date" value={dashboardEndDate} onChange={e=>setDashboardEndDate(e.target.value)} className="bg-[#F6EFE9] border border-[#E8DCC8] rounded-xl px-4 py-3 font-bold outline-none" />
+                </div>
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
-                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">平均客單價</h3>
+               <div className="border border-[#4A2511] rounded-3xl p-6 shadow-lg relative overflow-hidden group" style={{ backgroundColor: '#4A2511' }}>
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-[#E8DCC8] mb-2">總營業額 ({dashboardData.currentRange?.label})</h3>
+                   <p className="text-4xl font-black text-white">${dashboardData.rev.toLocaleString()}</p>
+                   {dashboardData.changes && dashboardPeriod !== 'custom' && (
+                      <div className={`mt-3 text-sm font-bold flex items-center gap-1 w-fit px-2 py-0.5 rounded-full ${dashboardData.changes.rev >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                         {dashboardData.changes.rev >= 0 ? '↗' : '↘'} {Math.abs(dashboardData.changes.rev)}% <span className="text-[10px] text-[#E8DCC8]/70 ml-1 font-normal">vs 前期</span>
+                      </div>
+                   )}
+               </div>
+               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm relative overflow-hidden group">
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">服務客數 (Clients)</h3>
+                   <p className="text-4xl font-black text-[#4A2511]">{dashboardData.clients} <span className="text-xl text-gray-300">位</span></p>
+                   {dashboardData.changes && dashboardPeriod !== 'custom' && (
+                      <div className={`mt-3 text-sm font-bold flex items-center gap-1 w-fit px-2 py-0.5 rounded-full ${dashboardData.changes.clients >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {dashboardData.changes.clients >= 0 ? '↗' : '↘'} {Math.abs(dashboardData.changes.clients)}%
+                      </div>
+                   )}
+               </div>
+               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm relative overflow-hidden group">
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">平均客單價 (Avg. Ticket)</h3>
                    <p className="text-4xl font-black text-[#4A2511]">${dashboardData.avgSpending}</p>
+                   {dashboardData.changes && dashboardPeriod !== 'custom' && (
+                      <div className={`mt-3 text-sm font-bold flex items-center gap-1 w-fit px-2 py-0.5 rounded-full ${dashboardData.changes.avg >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {dashboardData.changes.avg >= 0 ? '↗' : '↘'} {Math.abs(dashboardData.changes.avg)}%
+                      </div>
+                   )}
                </div>
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
-                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2 flex justify-between">
-                     <span>新舊客佔比</span>
-                     <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded flex items-center"><Icons.AlertTriangle className="w-3 h-3 mr-1"/> 流失預警: {crmProfiles.filter(p=>p.daysSince>90 && p.visitCount>0).length} 人</span>
-                   </h3>
-                   <p className="text-4xl font-black text-[#4A2511]"><span className="text-emerald-600">{dashboardData.retentionPct}%</span> <span className="text-amber-600 ml-2">{dashboardData.newPct}%</span></p>
-               </div>
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
-                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">零售產品佔比 (Retail)</h3>
-                   <p className="text-4xl font-black text-[#4A2511]"><span className="text-[#8B5A2B]">{dashboardData.retailPct}%</span> <span className="text-lg text-gray-400 ml-2">${dashboardData.retailRev.toLocaleString()}</span></p>
-               </div>
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
-                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">中英客佔比 (EN/CN)</h3>
-                   <p className="text-4xl font-black text-[#4A2511]">{dashboardData.enPct}% / {dashboardData.cnPct}%</p>
-               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="text-white rounded-3xl p-10 shadow-xl relative overflow-hidden flex flex-col justify-center h-56" style={{ backgroundColor: activeTheme.hex }}>
-                 <div className="absolute right-[-20px] top-[-20px] opacity-10 transform scale-[5]"><Icons.Dollar /></div>
-                 <h3 className="text-xl font-bold opacity-80 uppercase tracking-widest mb-3">週期總營業額 (Revenue)</h3>
-                 <p className="text-7xl font-black tracking-tight">${dashboardData.totalRev.toLocaleString()}</p>
-               </div>
-               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col justify-center h-56">
-                 <h3 className="text-xl font-bold uppercase tracking-widest mb-3 text-gray-500">週期服務客數 (Clients)</h3>
-                 <p className="text-7xl font-black text-[#4A2511] tracking-tight">{dashboardData.totalClients} <span className="text-3xl font-bold text-gray-300 ml-3">位</span></p>
+               <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm relative overflow-hidden group">
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-2">新客數 (New Customers)</h3>
+                   <p className="text-4xl font-black text-[#4A2511]">{dashboardData.newCus} <span className="text-xl text-gray-300">位</span></p>
+                   {dashboardData.changes && dashboardPeriod !== 'custom' && (
+                      <div className={`mt-3 text-sm font-bold flex items-center gap-1 w-fit px-2 py-0.5 rounded-full ${dashboardData.changes.newCus >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {dashboardData.changes.newCus >= 0 ? '↗' : '↘'} {Math.abs(dashboardData.changes.newCus)}%
+                      </div>
+                   )}
                </div>
             </div>
 
-            <div className="bg-white border border-[#E8DCC8] rounded-3xl p-10 shadow-sm flex flex-col h-[400px]">
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black text-[#4A2511]">營收趨勢 (Monthly Revenue)</h3>
-                  <select value={revenueMonths} onChange={(e) => setRevenueMonths(Number(e.target.value))} className="bg-[#F6EFE9] border border-[#E8DCC8] rounded-xl px-4 py-2 font-bold text-[#4A2511] outline-none cursor-pointer">
-                    <option value={3}>近 3 個月</option>
-                    <option value={6}>近 6 個月</option>
-                    <option value={12}>近 1 年</option>
-                    <option value={24}>近 2 年</option>
-                  </select>
+            {/* Secondary KPIs & Manual Input Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Ratio Cards */}
+                <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">新舊客佔比 (Retention)</h3>
+                        <div className="w-full bg-[#E8DCC8]/30 rounded-full h-8 mt-1 flex overflow-hidden shadow-inner border border-[#E8DCC8]">
+                             {dashboardData.retCusPct > 0 && <div className="bg-emerald-500 h-full flex items-center justify-center text-xs text-white font-black transition-all" style={{width: `${dashboardData.retCusPct}%`}}>{dashboardData.retCusPct}% 舊客</div>}
+                             {dashboardData.newCusPct > 0 && <div className="bg-amber-500 h-full flex items-center justify-center text-xs text-white font-black transition-all" style={{width: `${dashboardData.newCusPct}%`}}>{dashboardData.newCusPct}% 新客</div>}
+                        </div>
+                    </div>
+                    <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">零售產品佔比 (Retail)</h3>
+                        <p className="text-3xl font-black text-[#4A2511]">{dashboardData.retailPct}%</p>
+                        <p className="text-sm font-bold text-[#8B5A2B] mt-1">${dashboardData.retail.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col justify-center gap-4">
+                        <div>
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 flex justify-between">
+                                <span>男女比例 (Gender)</span>
+                            </h3>
+                            <div className="w-full bg-pink-100 rounded-full h-5 flex overflow-hidden shadow-inner">
+                                 {dashboardData.malePct > 0 && <div className="bg-blue-500 h-full flex items-center justify-center text-[11px] text-white font-black transition-all" style={{width: `${dashboardData.malePct}%`}}>{dashboardData.malePct}% M</div>}
+                                 {dashboardData.femalePct > 0 && <div className="bg-pink-500 h-full flex items-center justify-center text-[11px] text-white font-black transition-all" style={{width: `${dashboardData.femalePct}%`}}>{dashboardData.femalePct}% F</div>}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">中英客佔比 (Language)</h3>
+                            <div className="w-full bg-gray-100 rounded-full h-5 flex overflow-hidden shadow-inner">
+                                 {dashboardData.cnPct > 0 && <div className="bg-[#8B5A2B] h-full flex items-center justify-center text-[11px] text-white font-black transition-all" style={{width: `${dashboardData.cnPct}%`}}>{dashboardData.cnPct}% 簡</div>}
+                                 {dashboardData.zhPct > 0 && <div className="bg-[#C4A485] h-full flex items-center justify-center text-[11px] text-white font-black transition-all" style={{width: `${dashboardData.zhPct}%`}}>{dashboardData.zhPct}% 繁</div>}
+                                 {dashboardData.enPct > 0 && <div className="bg-gray-400 h-full flex items-center justify-center text-[11px] text-white font-black transition-all" style={{width: `${dashboardData.enPct}%`}}>{dashboardData.enPct}% EN</div>}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dashboardData.monthlyChart} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8DCC8" />
-                    <XAxis dataKey="month" tick={{fill: '#8B5A2B', fontWeight: 'bold'}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fill: '#8B5A2B', fontWeight: 'bold'}} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
-                    <Tooltip formatter={(value) => `$${value}`} contentStyle={{borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} />
-                    <Line type="monotone" dataKey="revenue" stroke={activeTheme.hex} strokeWidth={4} dot={{r: 6, fill: activeTheme.hex, strokeWidth: 2, stroke: 'white'}} activeDot={{r: 8}} />
-                  </LineChart>
-                </ResponsiveContainer>
+
+                {/* Marketing Manual Inputs */}
+                <div className="lg:col-span-4 bg-amber-50/50 border border-amber-200 rounded-3xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-amber-800">手動行銷指標追蹤 ({currentMonthKey})</h3>
+                    </div>
+                    <div className="space-y-5">
+                        <div>
+                            <div className="flex justify-between items-end mb-1">
+                                <label className="text-xs font-bold text-amber-700">Google 評論新增數 (Reviews)</label>
+                                <div className="text-xs text-amber-900 font-bold bg-white px-2 py-1 rounded border border-amber-200 shadow-sm flex items-center">
+                                    <input type="number" className="w-8 text-right outline-none bg-transparent" value={marketingMetrics[currentMonthKey]?.reviews || 0} onChange={e => handleMarketingChange('reviews', e.target.value)} />
+                                    <span className="mx-1 text-gray-300">/</span>
+                                    <input type="number" className="w-8 text-left outline-none bg-transparent text-gray-400 focus:text-amber-900 transition-colors" value={marketingMetrics[currentMonthKey]?.reviewsGoal || 10} onChange={e => handleMarketingChange('reviewsGoal', e.target.value)} title="設定目標" />
+                                </div>
+                            </div>
+                            <div className="w-full bg-amber-200 rounded-full h-3 overflow-hidden shadow-inner">
+                                 <div className="bg-amber-600 h-full rounded-full transition-all" style={{ width: `${Math.min(((marketingMetrics[currentMonthKey]?.reviews || 0) / (marketingMetrics[currentMonthKey]?.reviewsGoal || 10)) * 100, 100)}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between items-end mb-1">
+                                <label className="text-xs font-bold text-amber-700">社群貼文/廣告發佈數 (Ads)</label>
+                                <div className="text-xs text-amber-900 font-bold bg-white px-2 py-1 rounded border border-amber-200 shadow-sm flex items-center">
+                                    <input type="number" className="w-8 text-right outline-none bg-transparent" value={marketingMetrics[currentMonthKey]?.ads || 0} onChange={e => handleMarketingChange('ads', e.target.value)} />
+                                    <span className="mx-1 text-gray-300">/</span>
+                                    <input type="number" className="w-8 text-left outline-none bg-transparent text-gray-400 focus:text-amber-900 transition-colors" value={marketingMetrics[currentMonthKey]?.adsGoal || 4} onChange={e => handleMarketingChange('adsGoal', e.target.value)} title="設定目標" />
+                                </div>
+                            </div>
+                            <div className="w-full bg-amber-200 rounded-full h-3 overflow-hidden shadow-inner">
+                                 <div className="bg-amber-500 h-full rounded-full transition-all" style={{ width: `${Math.min(((marketingMetrics[currentMonthKey]?.ads || 0) / (marketingMetrics[currentMonthKey]?.adsGoal || 4)) * 100, 100)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[450px]">
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">設計師業績分佈</h3>
-                {dashboardData.stylistChart.length > 0 ? (
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              {/* Customers Per Day Chart */}
+              <div className="lg:col-span-8 bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-black text-[#4A2511]">客流量分佈 (Peak & Quiet)</h3>
+                    <div className="flex gap-4 text-sm font-bold">
+                        <span className="bg-red-50 text-red-600 px-2 py-1 rounded-lg border border-red-100 shadow-sm">🔥 Peak: {dashboardData.peak.time} ({dashboardData.peak.count})</span>
+                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg border border-blue-100 shadow-sm">❄️ Quiet: {dashboardData.quiet.time} ({dashboardData.quiet.count})</span>
+                        <span className="bg-[#D96570]/10 text-[#D96570] px-2 py-1 rounded-lg border border-[#D96570]/20 shadow-sm">🔴 星期日 (Sunday)</span>
+                    </div>
+                </div>
+                {dashboardData.dailyChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 15, fontWeight: 'bold' }} width={80}/>
-                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="value" radius={[0, 12, 12, 0]} barSize={40}>
-                        {dashboardData.stylistChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
+                    <BarChart data={dashboardData.dailyChart} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8DCC8" />
+                      <XAxis dataKey="time" tick={{fill: '#8B5A2B', fontWeight: 'bold', fontSize: 12}} axisLine={false} tickLine={false} />
+                      <YAxis tick={{fill: '#8B5A2B', fontWeight: 'bold', fontSize: 12}} axisLine={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                         {dashboardData.dailyChart.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.isSunday ? '#D96570' : activeTheme.hex} />
+                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
+                ) : <div className="flex-1 flex items-center justify-center text-xl font-bold text-gray-300">此區間尚無數據</div>}
               </div>
 
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">熱門服務排行</h3>
-                {dashboardData.serviceChart.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={160}/>
-                      <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '18px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                      <Bar dataKey="count" fill={activeTheme.hex} radius={[0, 12, 12, 0]} barSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無數據</div>}
-              </div>
-
-              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
-                <h3 className="text-2xl font-black mb-8 text-center text-[#4A2511]">新客來源分佈</h3>
-                {dashboardData.sourceChart.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={dashboardData.sourceChart}
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({name, percent}) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
-                        labelLine={false}
-                      >
-                        {dashboardData.sourceChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => [`${value} 人`, '數量']} contentStyle={{borderRadius: '16px', fontWeight: 'bold', fontSize: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : <div className="flex-1 flex items-center justify-center text-2xl font-bold text-gray-300">尚無新客數據</div>}
+              {/* New Customer Source Pie Chart */}
+              <div className="lg:col-span-4 bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
+                 <h3 className="text-xl font-black mb-6 text-[#4A2511]">新客來源分布 (Sources)</h3>
+                 {dashboardData.sourceChart.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie data={dashboardData.sourceChart} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                                {dashboardData.sourceChart.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => [`${value} 位`, '新客數']} contentStyle={{borderRadius: '12px', fontWeight: 'bold', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontWeight: 'bold', fontSize: '13px', color: '#4A2511'}}/>
+                        </PieChart>
+                    </ResponsiveContainer>
+                 ) : <div className="flex-1 flex items-center justify-center text-xl font-bold text-gray-300">此區間無新客資料</div>}
               </div>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[400px]">
+                  {/* Service Popularity by Stylist Stacked Bar */}
+                  <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col">
+                    <h3 className="text-xl font-black mb-6 text-[#4A2511]">熱門服務分佈 (依設計師)</h3>
+                    {dashboardData.serviceChart.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={dashboardData.serviceChart} layout="vertical" margin={{ top: 0, right: 20, left: 30, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 12, fontWeight: 'bold' }} width={120}/>
+                          <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '12px', fontWeight: 'bold', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                          <Legend wrapperStyle={{fontWeight: 'bold', fontSize: '12px'}}/>
+                          <Bar dataKey="Man" stackId="a" fill={STYLIST_THEMES['Man'].hex} />
+                          <Bar dataKey="Becky" stackId="a" fill={STYLIST_THEMES['Becky'].hex} />
+                          <Bar dataKey="Sammy" stackId="a" fill={STYLIST_THEMES['Sammy'].hex} />
+                          <Bar dataKey="Others" stackId="a" fill={STYLIST_THEMES['Others'].hex} radius={[0, 8, 8, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="flex-1 flex items-center justify-center text-xl font-bold text-gray-300">此區間尚無數據</div>}
+                  </div>
+                  
+                  {/* Stylist Revenue Distribution */}
+                  <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col">
+                    <h3 className="text-xl font-black mb-6 text-[#4A2511]">設計師業績分佈</h3>
+                    {dashboardData.stylistChart.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={dashboardData.stylistChart.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E8DCC8" />
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={80}/>
+                          <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{borderRadius: '12px', fontWeight: 'bold', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}}/>
+                          <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={30}>
+                            {dashboardData.stylistChart.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || '#595959'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="flex-1 flex items-center justify-center text-xl font-bold text-gray-300">此區間尚無數據</div>}
+                  </div>
+            </div>
+
+            {/* Transactions Table */}
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col">
                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                   <h3 className="text-2xl font-black text-[#4A2511]">交易明細總表 (可點擊編輯)</h3>
-                   <div className="flex gap-2 items-center bg-gray-50 border p-1.5 rounded-xl">
-                       <button onClick={() => {
-                           const current = dashboardStartDate ? new Date(dashboardStartDate) : new Date();
-                           current.setDate(current.getDate() - 1);
-                           const dStr = current.toLocaleDateString('en-CA');
-                           setDashboardStartDate(dStr); setDashboardEndDate(dStr);
-                       }} className="px-3 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-gray-500">&lt;</button>
-                       
-                       <button onClick={() => {
-                           const today = new Date().toLocaleDateString('en-CA');
-                           setDashboardStartDate(today); setDashboardEndDate(today);
-                       }} className="px-4 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-[#8B5A2B]">TODAY</button>
-                       
-                       <button onClick={() => {
-                           const current = dashboardStartDate ? new Date(dashboardStartDate) : new Date();
-                           current.setDate(current.getDate() + 1);
-                           const dStr = current.toLocaleDateString('en-CA');
-                           setDashboardStartDate(dStr); setDashboardEndDate(dStr);
-                       }} className="px-3 py-1.5 font-bold hover:bg-gray-200 rounded-lg text-gray-500">&gt;</button>
-
-                       <span className="text-gray-300 mx-2">|</span>
-                       <input type="date" value={dashboardStartDate} onChange={e=>setDashboardStartDate(e.target.value)} className="bg-white border rounded-lg px-2 py-1.5 font-bold text-sm outline-none" />
-                       <span className="text-gray-400">-</span>
-                       <input type="date" value={dashboardEndDate} onChange={e=>setDashboardEndDate(e.target.value)} className="bg-white border rounded-lg px-2 py-1.5 font-bold text-sm outline-none" />
+                   <div className="flex items-center gap-4">
+                       <h3 className="text-2xl font-black text-[#4A2511]">交易明細總表 (可點擊編輯)</h3>
+                       <button onClick={() => handleTransactionCSVExport(dashboardData.records)} className="bg-[#E8DCC8]/30 hover:bg-[#E8DCC8] text-[#8B5A2B] px-3 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 border border-[#E8DCC8]">
+                           <Icons.Download /> 匯出目前明細
+                       </button>
                    </div>
                </div>
                <div className="overflow-x-auto custom-scrollbar max-h-[500px]">
@@ -2154,38 +2327,38 @@ export default function App() {
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-[#E8DCC8]">
-                     {dashboardData.filteredRecords.sort((a,b) => String(formatShortDate(b.date)).localeCompare(String(formatShortDate(a.date)))).map((r, i) => (
+                     {dashboardData.records.sort((a,b) => String(formatShortDate(b.date)).localeCompare(String(formatShortDate(a.date)))).map((r, i) => (
                        <tr key={i} onClick={() => { playAudioFeedback('click'); setEditModal({...r, firstName: getFullName(r)}); }} className="hover:bg-blue-50 transition-colors cursor-pointer">
                          <td className="p-4 font-bold text-gray-600">
                             <div>{formatShortDate(r.date)}</div>
                             <div className="text-[10px] text-gray-400 font-mono mt-0.5">{r.timestamp ? new Date(r.timestamp).toLocaleString('zh-TW', {hour12: false, month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : ''}</div>
                          </td>
                          <td className="p-4 font-mono text-gray-400">{r.serviceId}</td>
-                         <td className="p-4 font-black text-[#4A2511]">
-                           {r.firstName || r.name}
-                           {r.referredBy && <span className="block text-[10px] text-amber-600">由 {r.referredBy} 推薦</span>}
+                         <td className="p-4 font-black text-[#4A2511] flex items-center gap-2">
+                           <button onClick={(e) => { e.stopPropagation(); setCrmSearchQuery(r.customerId); setActiveTab('crm'); }} className="text-[#8B5A2B] hover:text-[#4A2511] hover:underline flex items-center gap-1 transition-colors">
+                               <Icons.User className="w-3 h-3" /> {r.firstName || r.name}
+                           </button>
+                           {r.referredBy && <span className="text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-100">由 {r.referredBy} 推薦</span>}
                          </td>
                          <td className="p-4">
-                            <span className="px-2 py-1 rounded-md text-white text-xs font-bold shadow-sm" style={{backgroundColor: STYLIST_THEMES[r.stylist]?.hex || '#595959'}}>{r.stylist}</span>
+                            <span className="px-2 py-1 rounded-md text-white text-xs font-bold shadow-sm" style={{backgroundColor: STYLIST_THEMES[cleanStylistName(r.stylist)]?.hex || '#595959'}}>{cleanStylistName(r.stylist)}</span>
                          </td>
                          <td className="p-4 text-gray-600 max-w-[250px] truncate" title={`${r.services} ${r.retailItems ? `| 🛒 ${r.retailItems}` : ''}`}>
                            {r.services} {r.retailItems && <span className="text-[#8B5A2B] ml-1 font-bold">🛒 {r.retailItems}</span>}
                          </td>
                          <td className="p-4 font-bold text-gray-500">{r.paymentMethod}</td>
-                         <td className="p-4 font-black text-[#4A2511] text-right text-lg">${r.price}</td>
+                         <td className="p-4 font-black text-[#4A2511] text-right text-lg">${parsePriceRobust(r.price).toLocaleString()}</td>
                        </tr>
                      ))}
                    </tbody>
                  </table>
-                 {dashboardData.filteredRecords.length === 0 && <div className="py-10 text-center text-xl text-gray-300 font-bold">此期間無交易紀錄</div>}
+                 {dashboardData.records.length === 0 && <div className="py-10 text-center text-xl text-gray-300 font-bold">此期間無交易紀錄</div>}
                </div>
             </div>
           </div>
         )}
 
-        {/* ==========================================
-            TAB 4: DATA HUB
-            ========================================== */}
+        {}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
                <div className="bg-white border p-10 rounded-3xl shadow-xl max-w-sm w-full text-center">
@@ -2257,7 +2430,7 @@ export default function App() {
                            <Icons.Check /> <span>資料安全操作指南</span>
                         </h3>
                         <ul className="space-y-4 text-sm font-bold opacity-90 leading-relaxed">
-                            <li className="flex gap-2"><span className="text-amber-400">1.</span> <span><b>每日早晨：</b>點擊右上角的「🔄 同步按鈕」，獲取雲端最新資料，確保各分店進度一致。</span></li>
+                            <li className="flex gap-2"><span className="text-amber-400">1.</span> <span><b>每日早晨：</b>點擊右上角的「🔄 重新整理」按鈕，獲取雲端最新資料，確保各分店進度一致。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">2.</span> <span><b>日常結帳：</b>直接在 Checkout 頁面結帳，系統會自動將資料背景寫入雲端，<span className="underline">不需手動上傳</span>。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">3.</span> <span><b>修改與刪除：</b>若在客歷卡或儀表板修改/刪除了歷史紀錄，請務必點擊下方的「一鍵上傳備份至雲端」以覆蓋舊檔。</span></li>
                             <li className="flex gap-2"><span className="text-amber-400">4.</span> <span><b>每週備份：</b>店長請每週執行一次最下方的「完整系統備份 (JSON)」，將實體檔案存於本機以防萬一。</span></li>
@@ -2274,24 +2447,26 @@ export default function App() {
                       <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
                          <Icons.Cloud /> <span>API 串接設定 (Google Sync)</span>
                       </h3>
-                      <div className="mb-5 space-y-4">
-                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">CRM 客戶資料庫 API (Google Sheet)</label>
-                            <input type="text" placeholder="請貼上 Sheet 部署的 Apps Script 網址..." value={driveApiUrl} onChange={(e) => setDriveApiUrl(e.target.value)}
-                                   className="w-full bg-blue-50 border-blue-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-blue-400 text-blue-900" />
-                         </div>
-                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">預約排程 API (Google Calendar)</label>
-                            <input type="text" placeholder="請貼上 Calendar 部署的 Apps Script 網址..." value={calendarApiUrl} onChange={(e) => setCalendarApiUrl(e.target.value)}
-                                   className="w-full bg-amber-50 border-amber-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-amber-400 text-amber-900" />
-                         </div>
+                      
+                      <div className="space-y-4 mb-6">
+                          <div>
+                              <label className="block text-sm font-bold text-gray-600 mb-1">CRM 客戶資料庫 API (Google Sheet)</label>
+                              <input type="text" placeholder="https://script.google.com/macros/s/.../exec" value={driveApiUrl} onChange={(e) => setDriveApiUrl(e.target.value)}
+                                     className="w-full bg-blue-50 border-blue-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-blue-400 text-blue-900" />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-gray-600 mb-1">預約排程 API (Google Calendar)</label>
+                              <input type="text" placeholder="https://script.google.com/macros/s/.../exec" value={calendarApiUrl} onChange={(e) => setCalendarApiUrl(e.target.value)}
+                                     className="w-full bg-yellow-50 border-yellow-200 border rounded-xl py-3 px-4 text-sm font-mono focus:outline-none focus:border-yellow-400 text-yellow-900" />
+                          </div>
                       </div>
+
                       <div className="flex gap-4">
                          <button onClick={handleCloudBackup} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-[#8B5A2B] text-white hover:bg-[#6D3A14] rounded-2xl transition-colors shadow-lg">
                             <Icons.Upload />
                             <span className="font-bold mt-1">一鍵上傳備份至雲端</span>
                          </button>
-                         <button onClick={handleCloudRestore} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-colors shadow-lg">
+                         <button onClick={handleCloudRefresh} disabled={isSyncing} className="flex-1 flex flex-col items-center justify-center p-4 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-colors shadow-lg">
                             <Icons.Download />
                             <span className="font-bold mt-1">從雲端還原至本機</span>
                          </button>
@@ -2307,8 +2482,8 @@ export default function App() {
                                <div className="flex flex-col items-start"><span className="text-lg font-bold text-[#4A2511]">匯出客戶總表 (CSV)</span></div>
                                <div className="text-gray-400"><Icons.Download /></div>
                           </button>
-                          <button onClick={handleTransactionCSVExport} className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-[#E8DCC8]/30 rounded-2xl transition-colors border border-gray-100">
-                               <div className="flex flex-col items-start"><span className="text-lg font-bold text-[#4A2511]">匯出交易明細 (CSV)</span></div>
+                          <button onClick={() => handleTransactionCSVExport()} className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-[#E8DCC8]/30 rounded-2xl transition-colors border border-gray-100">
+                               <div className="flex flex-col items-start"><span className="text-lg font-bold text-[#4A2511]">匯出所有交易明細 (CSV)</span></div>
                                <div className="text-gray-400"><Icons.Download /></div>
                           </button>
                           <div className="pt-2">
@@ -2331,9 +2506,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ==========================================
-          MODALS & OVERLAYS
-          ========================================== */}
+      {}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300 border-4 border-[#E8DCC8]">
@@ -2372,7 +2545,7 @@ export default function App() {
                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">取消</button>
                <button onClick={() => {
                   playAudioFeedback('success');
-                  setHistoryRecords(prev => prev.filter(r => r.serviceId !== deleteConfirm.serviceId));
+                  setRawHistoryRecords(prev => prev.filter(r => r.serviceId !== deleteConfirm.serviceId));
                   triggerNotification(`已刪除 ${deleteConfirm.fullName} 的服務紀錄`);
                   setDeleteConfirm(null);
                }} className="flex-1 py-4 rounded-xl text-xl font-bold bg-red-500 text-white shadow-lg hover:bg-red-600">確認刪除</button>
@@ -2386,7 +2559,7 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault();
             playAudioFeedback('success');
-            setHistoryRecords(prev => prev.map(r => r.serviceId === editModal.serviceId ? { ...r, ...editModal } : r));
+            setRawHistoryRecords(prev => prev.map(r => r.serviceId === editModal.serviceId ? { ...r, ...editModal } : r));
             triggerNotification(`已更新服務紀錄！`);
             setEditModal(null);
           }} className="bg-white rounded-[2rem] max-w-2xl w-full p-8 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
@@ -2444,7 +2617,7 @@ export default function App() {
             const newFirst = parts[0];
             const newLast = parts.length > 1 ? parts.slice(1).join(' ') : '';
             
-            setHistoryRecords(prev => prev.map(r => r.customerId === profileEditData.customerId ? { 
+            setRawHistoryRecords(prev => prev.map(r => r.customerId === profileEditData.customerId ? { 
                 ...r, firstName: newFirst, lastName: newLast, gender: e.target.gender.value, language: e.target.language.value, phone: e.target.phone.value, email: e.target.email.value, birthMonth: e.target.birthMonth.value
             } : r));
             
@@ -2488,7 +2661,7 @@ export default function App() {
                <button onClick={() => setClientDeleteConfirm(null)} className="flex-1 py-4 rounded-xl text-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">取消</button>
                <button onClick={() => {
                   playAudioFeedback('success');
-                  setHistoryRecords(prev => prev.filter(r => r.customerId !== clientDeleteConfirm.customerId));
+                  setRawHistoryRecords(prev => prev.filter(r => r.customerId !== clientDeleteConfirm.customerId));
                   triggerNotification(`已刪除 ${clientDeleteConfirm.fullName} 的所有檔案`);
                   setClientDeleteConfirm(null);
                }} className="flex-1 py-4 rounded-xl text-xl font-bold bg-red-500 text-white shadow-lg hover:bg-red-600">確認刪除</button>
@@ -2713,7 +2886,7 @@ export default function App() {
                                ))}
                            </div>
                            <div className="grid grid-cols-2 gap-3 text-sm">
-                               <div><span className="block text-xs text-blue-400 font-bold mb-0.5">總消費</span><span className="font-black text-blue-800">${matchedProfile.totalSpent}</span></div>
+                               <div><span className="block text-xs text-blue-400 font-bold mb-0.5">總消費</span><span className="font-black text-blue-800">${matchedProfile.totalSpent.toLocaleString()}</span></div>
                                <div><span className="block text-xs text-blue-400 font-bold mb-0.5">上次造訪</span><span className="font-black text-blue-800">{matchedProfile.latestVisitDate === '1970-01-01' ? '無' : matchedProfile.latestVisitDate}</span></div>
                                <div className="col-span-2"><span className="block text-xs text-blue-400 font-bold mb-0.5">上次服務</span><span className="font-bold text-blue-800">{matchedProfile.latestService || '無'}</span></div>
                            </div>
