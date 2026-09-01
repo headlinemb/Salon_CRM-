@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend, ComposedChart, LabelList } from 'recharts';
 
 const Icons = {
-  Check: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>,
+  Check: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>,
   User: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
-  X: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
+  X: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
   Gift: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>,
   Chart: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Database: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>,
@@ -19,13 +19,15 @@ const Icons = {
   CreditCard: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
   Wallet: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
   AlertTriangle: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-  Photo: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+  Photo: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Lock: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
-  Refresh: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+  Refresh: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
   MessageCircle: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
   Calendar: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   ChevronLeft: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>,
   ChevronRight: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
+  Maximize: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>,
+  Minimize: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7m-7 17v-6m0 0h6m-6 0l7 7M10 4v6m0 0H4m6 0L3 3" /></svg>,
 };
 
 const STYLIST_THEMES = { 'Man': { hex: '#6D3A14', light: '#6D3A1415', shadow: 'rgba(109, 58, 20, 0.3)' }, 'Becky': { hex: '#9F3E3E', light: '#9F3E3E15', shadow: 'rgba(159, 62, 62, 0.3)' }, 'Sammy': { hex: '#2C496A', light: '#2C496A15', shadow: 'rgba(44, 73, 106, 0.3)' }, 'Others': { hex: '#595959', light: '#59595915', shadow: 'rgba(89, 89, 89, 0.3)' } };
@@ -79,10 +81,13 @@ export default function App() {
   const [editModal, setEditModal] = useState(null); 
   const [profileEditData, setProfileEditData] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [confirmFormulaModal, setConfirmFormulaModal] = useState(null);
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showTagsConfig, setShowTagsConfig] = useState(false);
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13') || '');
-  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13') || '');
+  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
+
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13_6') || 'https://script.google.com/macros/s/AKfycbxCv4qRXnzrAimYoRfI1fwJLqM4P9NfyAAumRalugmgUhTs0eKEop3Z712JKET8rIgbKQ/exec');
+  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13_6') || 'https://script.google.com/macros/s/AKfycbyuAjmjMvUoJz2ZrMXXCeZ-zn0F9Gk2CG2R1-hyUm8dmd-u76rvkzW0xUJNtMP5nSzFdQ/exec');
   
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -103,15 +108,75 @@ export default function App() {
   const [interestTags, setInterestTags] = useState(() => JSON.parse(localStorage.getItem('headline_tags_v1') || JSON.stringify(['白頭髮遮蓋', '想試染髮', '有機/天然品牌', '縮毛矯正', '受損髮質修護'])));
   const [showRetailSection, setShowRetailSection] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => { const interval = setInterval(() => setCurrentTime(new Date()), 60000); return () => clearInterval(interval); }, []);
   useEffect(() => { localStorage.setItem('headline_services_v11', JSON.stringify(hairServices)); }, [hairServices]);
   useEffect(() => { localStorage.setItem('headline_tags_v1', JSON.stringify(interestTags)); }, [interestTags]);
-  useEffect(() => { localStorage.setItem('headline_drive_api_v13', driveApiUrl); }, [driveApiUrl]);
-  useEffect(() => { localStorage.setItem('headline_calendar_api_v13', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_drive_api_v13_6', driveApiUrl); }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_calendar_api_v13_6', calendarApiUrl); }, [calendarApiUrl]);
 
   const getApiUrl = (baseUrl, action) => { if (!baseUrl) return ''; try { const url = new URL(baseUrl); url.searchParams.set('action', action); return url.toString(); } catch (e) { return `${baseUrl}?action=${action}`; } };
-  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', nextSuggest: '', _eventId: null, _stylist: null });
+
+  const fetchCalendarEvents = async () => {
+    if (!calendarApiUrl) return; 
+    setIsCalendarLoading(true);
+    try { 
+        // REMOVED 'headers' to fix CORS preflight issue on Google Apps Script GET request!
+        const res = await fetch(getApiUrl(calendarApiUrl, 'get_events')); 
+        const data = await res.json(); 
+        if (data.status === 'success') {
+            setCalendarEvents(data.data || []); 
+        } else {
+            console.error("Calendar API format mismatch", data);
+        }
+    } catch (e) { 
+        console.error("Calendar Sync Error:", e);
+    } finally { 
+        setIsCalendarLoading(false); 
+    }
+  };
+  
+  const handleGlobalSync = async () => {
+    setIsSyncing(true);
+    let successCount = 0;
+    
+    if (driveApiUrl) {
+      try {
+        // REMOVED headers to fix CORS preflight issue on GET
+        const res = await fetch(getApiUrl(driveApiUrl, 'get_all'));
+        const result = await res.json();
+        if (result.status === 'success' && result.data) {
+          setRawHistoryRecords(result.data);
+          successCount++;
+        }
+      } catch(e) { console.error("Drive Sync Fail:", e); }
+    }
+    
+    if (calendarApiUrl) {
+      try {
+        await fetchCalendarEvents();
+        successCount++;
+      } catch(e) { console.error("Calendar Sync Fail:", e); }
+    }
+    
+    if (successCount > 0) triggerNotification('✅ 資料同步完成 (Synced)');
+    else triggerNotification('❌ 無法連線至雲端 (Sync Failed)');
+    
+    setIsSyncing(false);
+  };
+
+  useEffect(() => {
+    handleGlobalSync();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const generateServiceId = () => {
+    const d = new Date();
+    return `S-${String(d.getFullYear()).slice(-2)}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.floor(Math.random()*9000+1000)}`;
+  };
+
+  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', serviceId: generateServiceId(), _eventId: null, _stylist: null });
 
   const [formData, setFormData] = useState(getInitialForm());
   const [submitting, setSubmitting] = useState(false);
@@ -125,7 +190,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(rawHistoryRecords)); }, [rawHistoryRecords]);
 
   const triggerNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
-  const handleTabChange = (tab) => { playAudioFeedback('click'); setActiveTab(tab); if(tab !== 'datahub') setDataHubUnlocked(false); };
+  const handleTabChange = (tab) => { playAudioFeedback('click'); setActiveTab(tab); if(tab !== 'datahub') setDataHubUnlocked(false); setIsProfileExpanded(false); };
   const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
   const toggleArrayItem = (f, i) => { playAudioFeedback('click'); setFormData(p => ({ ...p, [f]: (p[f]||[]).includes(i) ? p[f].filter(s=>s!==i) : [...(p[f]||[]), i] })); };
 
@@ -138,7 +203,6 @@ export default function App() {
     const ids = records.filter(r => r.customerId && r.customerId.startsWith('C')).map(r => parseInt(r.customerId.replace('C', ''), 10)).filter(n => !isNaN(n));
     return `C${ids.length > 0 ? Math.max(...ids) + 1 : 1000}`;
   };
-  const generateServiceId = (isProductOnly) => { const d = new Date(); return `S-${String(d.getFullYear()).slice(-2)}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.floor(Math.random()*90+10)}`; };
 
   const crmProfiles = useMemo(() => {
     const profiles = {};
@@ -166,8 +230,8 @@ export default function App() {
     Object.values(profiles).forEach(p => {
         if (p.customerId) {
             p.referralsMade = historyRecords.filter(r => {
-                if (!r.referredBy || !r.referredBy.trim()) return false;
-                const ref = r.referredBy.toLowerCase();
+                const ref = String(r.referredBy || '').trim().toLowerCase();
+                if (!ref) return false;
                 return ref.includes(p.customerId.toLowerCase()) || (p.phone && p.phone.length > 5 && ref.includes(p.phone)) || (p.fullName && p.fullName.length > 1 && ref.includes(p.fullName.toLowerCase()));
             }).length;
         }
@@ -176,7 +240,7 @@ export default function App() {
     let result = Object.values(profiles).map(p => {
       let tags = [];
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
-      const isReferred = p.visits.some(v => v.customerSource?.includes('Referral') || v.referredBy?.trim());
+      const isReferred = p.visits.some(v => v.customerSource?.includes('Referral') || String(v.referredBy || '').trim() !== '');
       if (p.visitCount === 1) tags.push({ label: isReferred ? '🎁 推薦新客' : '新客', color: isReferred ? 'bg-pink-100 text-pink-800' : 'bg-emerald-100 text-emerald-900' });
       if (p.referralsMade > 0) tags.push({ label: `⭐ 推薦達人 (${p.referralsMade})`, color: 'bg-yellow-100 text-yellow-800' });
       
@@ -189,11 +253,21 @@ export default function App() {
     });
 
     const sortedResult = [...result];
-    if (crmSortBy === 'latestVisit') sortedResult.sort((a, b) => (b.latestVisitDate || '').localeCompare(a.latestVisitDate || ''));
+    if (crmSortBy === 'latestVisit') {
+        sortedResult.sort((a, b) => {
+           const dateA = new Date(a.latestVisitDate === '1970-01-01' ? 0 : a.latestVisitDate).getTime() || 0;
+           const dateB = new Date(b.latestVisitDate === '1970-01-01' ? 0 : b.latestVisitDate).getTime() || 0;
+           return dateB - dateA;
+        });
+    }
     if (crmSortBy === 'totalSpent') sortedResult.sort((a, b) => b.totalSpent - a.totalSpent);
     if (crmSortBy === 'visitCount') sortedResult.sort((a, b) => b.visitCount - a.visitCount);
     if (crmSortBy === 'name_asc') sortedResult.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
-    if (crmSortBy === 'stylist') sortedResult.sort((a, b) => (a.preferredStylist || '').localeCompare(b.preferredStylist || ''));
+    if (crmSortBy === 'stylist') {
+        // Enforce specific Stylist Sort Order
+        const order = { 'Man': 1, 'Becky': 2, 'Sammy': 3, 'Others': 4 };
+        sortedResult.sort((a, b) => (order[a.preferredStylist] || 4) - (order[b.preferredStylist] || 4));
+    }
     return sortedResult;
   }, [historyRecords, crmSortBy]);
 
@@ -212,11 +286,29 @@ export default function App() {
     const currentRange = getPeriodRange(dashboardPeriod, dashboardDateRef, 0);
     const prevRange = dashboardPeriod !== 'custom' ? getPeriodRange(dashboardPeriod, dashboardDateRef, -1) : null;
 
+    let globalReferralMap = {}; 
+    let globalRefTotal = 0, globalRefRev = 0;
+    
+    // Calculates Top Referrers safely across ALL history regardless of dates
+    historyRecords.forEach(r => {
+        const isRef = String(r.customerSource || '').includes('Referral') || String(r.customerSource || '').includes('朋友介紹') || String(r.referredBy || '').trim() !== '';
+        if (isRef) {
+            globalRefTotal++; 
+            globalRefRev += r.price;
+            const refKey = String(r.referredBy || '').trim();
+            if (refKey) {
+                if(!globalReferralMap[refKey]) globalReferralMap[refKey] = { name: refKey, count: 0, revenue: 0 };
+                globalReferralMap[refKey].count += 1; 
+                globalReferralMap[refKey].revenue += r.price;
+            }
+        }
+    });
+    const topReferrersList = Object.values(globalReferralMap).sort((a,b) => b.count - a.count).slice(0, 5);
+
     const getMetrics = (start, end) => {
         const records = historyRecords.filter(r => !r.isProfileOnly && new Date(parseDateFlexible(r.date)) >= start && new Date(parseDateFlexible(r.date)) <= end);
         let m = { rev: 0, clients: records.length, retail: 0, newCus: 0, male: 0, female: 0, en: 0, cn: 0, zh: 0 };
         let dailyMap = {}, serviceMap = {}, stylistMap = { Man: { revenue: 0, count: 0 }, Becky: { revenue: 0, count: 0 }, Sammy: { revenue: 0, count: 0 }, Others: { revenue: 0, count: 0 } }, sourceMap = {};
-        let referralMap = {}; let refTotal = 0, refRev = 0;
         
         records.forEach(r => {
             m.rev += r.price; 
@@ -224,19 +316,10 @@ export default function App() {
             if (sSub + rSub > 0) m.retail += (rSub / (sSub + rSub)) * r.price; else if (rSub > 0) m.retail += r.price;
             if (r.gender === 'Male') m.male++; else m.female++;
             if (r.language === 'EN') m.en++; else m.zh++; 
-            if (r.customerSource?.includes('新客')) {
+            if (String(r.customerSource || '').includes('新客')) {
                 m.newCus++;
-                let src = r.customerSource.includes('Referral') ? '朋友介紹' : (r.customerSource.includes('IG') || r.customerSource.includes('FB') ? 'IG/FB' : 'Walk-in');
+                let src = String(r.customerSource || '').includes('Referral') ? '朋友介紹' : (String(r.customerSource || '').includes('IG') || String(r.customerSource || '').includes('FB') ? 'IG/FB' : 'Walk-in');
                 sourceMap[src] = (sourceMap[src] || 0) + 1;
-                
-                if (r.customerSource.includes('Referral') || r.customerSource.includes('朋友介紹') || (r.referredBy && r.referredBy.trim() !== '')) {
-                    refTotal++; refRev += r.price;
-                    if (r.referredBy && r.referredBy.trim()) {
-                        const refKey = r.referredBy.trim();
-                        if(!referralMap[refKey]) referralMap[refKey] = { name: refKey, count: 0, revenue: 0 };
-                        referralMap[refKey].count += 1; referralMap[refKey].revenue += r.price;
-                    }
-                }
             }
             const sty = ['Man', 'Becky', 'Sammy'].includes(cleanStylistName(r.stylist)) ? cleanStylistName(r.stylist) : 'Others';
             stylistMap[sty].revenue += r.price; stylistMap[sty].count += 1;
@@ -253,8 +336,8 @@ export default function App() {
                 serviceMap[s][sty] += 1; serviceMap[s].total += 1;
             });
         });
-        const topReferrers = Object.values(referralMap).sort((a,b)=>b.count - a.count).slice(0, 5);
-        return { ...m, dailyChart: Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate), serviceChart: Object.values(serviceMap).sort((a,b)=>b.total-a.total).slice(0,8), stylistChart: Object.keys(stylistMap).map(k => ({ name: k, ...stylistMap[k] })).sort((a,b)=>b.revenue-a.revenue), sourceChart: Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })), records, referral: { totalReferred: refTotal, revenue: refRev, topReferrers } };
+        
+        return { ...m, dailyChart: Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate), serviceChart: Object.values(serviceMap).sort((a,b)=>b.total-a.total).slice(0,8), stylistChart: Object.keys(stylistMap).map(k => ({ name: k, ...stylistMap[k] })).sort((a,b)=>b.revenue-a.revenue), sourceChart: Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })), records };
     };
 
     const curr = getMetrics(currentRange.start, currentRange.end);
@@ -269,14 +352,9 @@ export default function App() {
         malePct: curr.clients ? ((curr.male / curr.clients) * 100).toFixed(0) : 0, femalePct: curr.clients ? ((curr.female / curr.clients) * 100).toFixed(0) : 0,
         enPct: (curr.en+curr.zh) ? ((curr.en / (curr.en+curr.zh)) * 100).toFixed(0) : 0, zhPct: (curr.en+curr.zh) ? ((curr.zh / (curr.en+curr.zh)) * 100).toFixed(0) : 0, 
         newCusPct: curr.clients ? ((curr.newCus / curr.clients) * 100).toFixed(0) : 0, retCusPct: curr.clients ? (((curr.clients - curr.newCus) / curr.clients) * 100).toFixed(0) : 0,
+        referral: { totalReferred: globalRefTotal, revenue: globalRefRev, topReferrers: topReferrersList }
     };
   }, [historyRecords, dashboardPeriod, dashboardDateRef, dashboardStartDate, dashboardEndDate]);
-
-  const fetchCalendarEvents = async () => {
-    if (!calendarApiUrl) return; setIsCalendarLoading(true);
-    try { const res = await fetch(getApiUrl(calendarApiUrl, 'get_events'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const data = await res.json(); if (data.status === 'success') setCalendarEvents(data.data); } catch (e) {} finally { setIsCalendarLoading(false); }
-  };
-  useEffect(() => { fetchCalendarEvents(); }, [calendarApiUrl]);
 
   const checkConflict = (stylist, dateStr, timeStr, durationMins, excludeEventId = null) => {
     if(!stylist || !dateStr || !timeStr || !durationMins) return false;
@@ -292,6 +370,8 @@ export default function App() {
     const payload = { action: 'create_event', stylist: schedAddEditModal.stylist, title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`, description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes, startTime: start.toISOString(), endTime: end.toISOString() };
     setCalendarEvents(prev => [...prev.filter(ev => ev.id !== schedAddEditModal.id), { id: fakeId, ...payload }]); setSchedAddEditModal(null); playAudioFeedback('success');
     if (!calendarApiUrl) return triggerNotification('✅ 已本地新增預約 (未設定 API)');
+    
+    // POST request is safe from CORS preflight issues when using text/plain
     if (schedAddEditModal.id) { try { await fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); } catch(err) {} }
     try { triggerNotification('⏳ 雲端同步中...'); const res = await fetch(getApiUrl(calendarApiUrl, 'create_event'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success') { triggerNotification('✅ 預約已同步至 Google 日曆！'); fetchCalendarEvents(); } } catch(err) { triggerNotification('❌ 同步失敗'); }
   };
@@ -303,22 +383,34 @@ export default function App() {
     if (val.trim().length > 0) { const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val))); setNameSuggests(matches); setShowNameSuggest(matches.length > 0); } else { setShowNameSuggest(false); setFormData(prev => ({ ...prev, customerId: '' })); }
   };
 
-  const handleSelectSuggest = (profile) => {
+  const handleSelectSuggest = (profile, extraData = {}) => {
     playAudioFeedback('click');
-    setFormData(prev => ({ ...prev, customerId: profile.customerId, clientType: 'Repeated', firstName: profile.fullName || '', lastName: '', gender: profile.gender || 'Female', language: profile.language || '中文', phone: profile.phone || '', email: profile.email || '', edmConsent: profile.edmConsent || '', birthMonth: profile.birthMonth || '', customerSource: '舊客 (Repeated)', interests: profile.interests || [] }));
-    setShowNameSuggest(false); triggerNotification(`✅ 已成功帶入舊客資料`);
+    setFormData(prev => ({ ...prev, customerId: profile.customerId, clientType: 'Repeated', firstName: profile.fullName || '', lastName: '', gender: profile.gender || 'Female', language: profile.language || '中文', phone: profile.phone || '', email: profile.email || '', edmConsent: profile.edmConsent || '', birthMonth: profile.birthMonth || '', customerSource: '舊客 (Repeated)', interests: profile.interests || [], formula: '', ...extraData }));
+    setShowNameSuggest(false);
+    
+    // Feature: Smart Formula Retrieval Popup 
+    if (profile.latestFormula && profile.latestFormula.trim() !== '') {
+        setConfirmFormulaModal({ name: profile.fullName, formula: profile.latestFormula });
+    } else {
+        triggerNotification(`✅ 已成功帶入舊客資料`);
+    }
   };
 
   const capturePhoto = async () => {
     try {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
         input.onchange = (e) => {
-            const file = e.target.files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            const file = (e.target).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64Data = event.target.result.split(',')[1];
+                const base64Data = (event.target.result).split(',')[1];
                 if (!driveApiUrl) { setFormData(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
                 try {
-                    const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: `${formData.firstName}_${Date.now()}.jpg`, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    // Smart Naming Format: Client ID_first name_service ID
+                    const dynamicId = formData.clientType === 'New' || !formData.customerId ? 'NewClient' : formData.customerId;
+                    const fName = formData.firstName || 'Unknown';
+                    const filename = `${dynamicId}_${fName}_${formData.serviceId}.jpg`;
+                    
+                    const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
                     const result = await res.json();
                     if(result.status === 'success') { setFormData(prev => ({...prev, photoLink: result.url})); triggerNotification('✅ 照片已成功上傳至雲端！'); }
                 } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
@@ -330,7 +422,7 @@ export default function App() {
   const handleSubmitCheckout = (e) => {
     e.preventDefault(); if (!formData.firstName) return triggerNotification('請輸入顧客姓名！'); if (!formData.price || parseInt(formData.price) <= 0) return triggerNotification('請輸入有效金額！');
     setSubmitting(true);
-    const finalRecord = { ...formData, firstName: formData.firstName.trim(), lastName: '', name: formData.firstName.trim(), customerId: formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(rawHistoryRecords) : formData.customerId, serviceId: generateServiceId(!(formData.selectedServices.length || formData.customService.trim())), customerSource: formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)'), services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '), interests: formData.interests.join(', '), isProfileOnly: false, timestamp: new Date().toISOString() };
+    const finalRecord = { ...formData, firstName: formData.firstName.trim(), lastName: '', name: formData.firstName.trim(), customerId: formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(rawHistoryRecords) : formData.customerId, serviceId: formData.serviceId || generateServiceId(), customerSource: formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)'), services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '), interests: formData.interests.join(', '), isProfileOnly: false, timestamp: new Date().toISOString() };
 
     setTimeout(() => {
       setRawHistoryRecords(prev => [finalRecord, ...prev]);
@@ -349,7 +441,14 @@ export default function App() {
 
   const handleCloudRestore = async () => {
       if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
-      try { triggerNotification('⏳ 正在從雲端下載資料...'); const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success' && result.data) { setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); } else triggerNotification('❌ 還原失敗'); } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
+      try { 
+          triggerNotification('⏳ 正在從雲端下載資料...'); 
+          const res = await fetch(getApiUrl(driveApiUrl, 'get_all')); // No headers to avoid CORS error
+          const result = await res.json(); 
+          if (result.status === 'success' && result.data) { 
+              setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); 
+          } else triggerNotification('❌ 還原失敗'); 
+      } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
   };
 
   const handleCloudBackup = async () => {
@@ -373,21 +472,29 @@ export default function App() {
     <div className="h-screen flex flex-col font-sans selection:bg-[#E8DCC8] selection:text-[#4A2511] overflow-hidden bg-[#F6EFE9] text-[#4A2511]">
       {notification && <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 font-bold text-xl" style={{ backgroundColor: activeTheme.hex }}><Icons.Check /> <span>{notification}</span></div>}
       
-      {}
+      {/* HEADER SECTION */}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
-        <div className="flex items-center space-x-8">
-          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v13.5 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
-          <div className="flex items-center space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
-            {[{ id: 'scheduler', icon: Icons.Calendar, label: '預約排程' }, { id: 'checkout', icon: Icons.Gift, label: '現場結帳' }, { id: 'crm', icon: Icons.User, label: '客戶資料庫' }, { id: 'dashboard', icon: Icons.Chart, label: '數據報表' }, { id: 'datahub', icon: Icons.Database, label: '資料中心' }].map(t => (
-              <button key={t.id} onClick={() => handleTabChange(t.id)} className={`px-5 py-2.5 rounded-xl text-lg font-bold flex items-center space-x-2 transition-all ${activeTab === t.id ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`} style={activeTab === t.id ? { backgroundColor: activeTheme.hex } : {}}><t.icon /> <span>{t.label}</span></button>
-            ))}
+        <div className="flex items-center space-x-8 w-full justify-between">
+          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v13.8 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
+          
+          <div className="flex items-center gap-4">
+            {/* Global Sync Button */}
+            <button type="button" onClick={handleGlobalSync} disabled={isSyncing} className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm border border-blue-100'}`}>
+              <span className={isSyncing ? "animate-spin inline-block" : "inline-block"}><Icons.Refresh /></span> <span>{isSyncing ? '同步中...' : '雲端同步'}</span>
+            </button>
+            
+            <div className="flex items-center space-x-1 bg-[#F6EFE9] p-1 rounded-2xl border border-[#E8DCC8]">
+              {[{ id: 'scheduler', icon: Icons.Calendar, label: '預約排程' }, { id: 'checkout', icon: Icons.Gift, label: '現場結帳' }, { id: 'crm', icon: Icons.User, label: '客戶資料庫' }, { id: 'dashboard', icon: Icons.Chart, label: '數據報表' }, { id: 'datahub', icon: Icons.Database, label: '資料中心' }].map(t => (
+                <button key={t.id} onClick={() => handleTabChange(t.id)} className={`px-5 py-2.5 rounded-xl text-lg font-bold flex items-center space-x-2 transition-all ${activeTab === t.id ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`} style={activeTab === t.id ? { backgroundColor: activeTheme.hex } : {}}><t.icon /> <span>{t.label}</span></button>
+              ))}
+            </div>
           </div>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative">
         
-        {}
+        {/* SCHEDULER TAB */}
         {activeTab === 'scheduler' && (
           <div className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300 h-full flex flex-col">
              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col h-full">
@@ -460,7 +567,7 @@ export default function App() {
                                     <tr key={dateString} className="hover:bg-gray-50">
                                       <td className="p-4 border-b border-r border-[#E8DCC8] align-top text-center"><div className="font-black text-xl text-[#4A2511]">{dateString.slice(5)}</div><div className="text-xs font-bold text-gray-400 mt-1">{d.toLocaleDateString('zh-HK', { weekday: 'short' })}</div></td>
                                       {visibleStylists.map(stylist => {
-                                         const dayEvents = calendarEvents.filter(e => { const eD = new Date(e.startTime); return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateString && cleanStylistName(e.stylist) === stylist; }).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+                                         const dayEvents = calendarEvents.filter(e => { const eD = new Date(e.startTime); return !isNaN(eD.getTime()) && eD.toLocaleDateString('en-CA') === dateString && cleanStylistName(e.stylist) === stylist; }).sort((a,b)=>new Date(a.startTime).getTime()-new Date(b.startTime).getTime());
                                          return (
                                             <td key={stylist} className="p-3 border-b border-r border-[#E8DCC8] align-top">
                                               <div className="space-y-3">
@@ -520,16 +627,26 @@ export default function App() {
           </div>
         )}
 
+        {/* CHECKOUT TAB */}
         {}
         {activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
               
-              <div className="lg:col-span-5 bg-white border border-gray-200 p-8 shadow-sm relative overflow-hidden rounded-[2.5rem] flex flex-col">
+              {/* Dynamic Enlargeable Container for Client Form */}
+              <div className={isProfileExpanded ? "fixed inset-4 md:inset-10 z-[195] bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col transition-all border border-gray-200" : "lg:col-span-5 bg-white border border-gray-200 p-8 shadow-sm relative overflow-hidden rounded-[2.5rem] flex flex-col transition-all"}>
                 <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-gray-200 to-gray-100"></div>
-                <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-black text-gray-800 flex items-center space-x-2"><Icons.User /> <span>客資建檔 Client Profile</span></h2></div>
                 
-                <div className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                   <h2 className={`${isProfileExpanded ? 'text-3xl' : 'text-2xl'} font-black text-gray-800 flex items-center space-x-2`}>
+                      <Icons.User /> <span>客資建檔 Client Profile</span>
+                   </h2>
+                   <button type="button" onClick={() => setIsProfileExpanded(!isProfileExpanded)} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl transition-colors text-sm">
+                      {isProfileExpanded ? <><Icons.Minimize className="w-5 h-5" /> <span>縮小返回 (Minimize)</span></> : <><Icons.Maximize className="w-5 h-5" /> <span>客戶自填 (Enlarge)</span></>}
+                   </button>
+                </div>
+                
+                <div className="space-y-6 flex-1">
                   <div className="relative">
                      <label className="block text-sm font-bold uppercase tracking-wider mb-2 text-gray-500">顧客全名 Full Name</label>
                      <input type="text" value={formData.firstName} onChange={handleNameSearchInput} onBlur={() => setTimeout(() => setShowNameSuggest(false), 200)} required placeholder="點此輸入全名 (如: Jacky Cheng)" className="w-full rounded-2xl py-4 px-5 text-xl font-black bg-gray-50 border-transparent focus:bg-white focus:border-gray-800 border-2 outline-none transition-colors shadow-inner" />
@@ -582,17 +699,33 @@ export default function App() {
                      </div>
                   </div>
 
-                  <div className="border-t border-gray-100 pt-6 mt-6">
-                     <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex justify-between items-center"><span>客人興趣 / 需求標籤 (Optional)</span><button type="button" onClick={()=>setShowTagsConfig(true)} className="text-blue-500 hover:text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">管理標籤</button></h3>
-                     <div className="flex flex-wrap gap-3 mb-6">
-                        {interestTags.map(interest => (
-                            <button type="button" key={interest} onClick={() => toggleArrayItem('interests', interest)} className={`px-5 py-2.5 rounded-xl text-base font-bold transition-all shadow-sm border-2 ${formData.interests.includes(interest) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{interest}</button>
-                        ))}
+                  {/* Conditionally hidden tags section when expanded */}
+                  {!isProfileExpanded && (
+                     <div className="border-t border-gray-100 pt-6 mt-6">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex justify-between items-center"><span>客人興趣 / 需求標籤 (Optional)</span><button type="button" onClick={()=>setShowTagsConfig(true)} className="text-blue-500 hover:text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">管理標籤</button></h3>
+                        <div className="flex flex-wrap gap-3 mb-6">
+                           {interestTags.map(interest => (
+                               <button type="button" key={interest} onClick={() => toggleArrayItem('interests', interest)} className={`px-5 py-2.5 rounded-xl text-base font-bold transition-all shadow-sm border-2 ${formData.interests.includes(interest) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{interest}</button>
+                           ))}
+                        </div>
                      </div>
-                  </div>
+                  )}
+
+                  {/* Submit/Done button exclusively for Enlarge Mode */}
+                  {isProfileExpanded && (
+                     <div className="mt-auto pt-8 flex justify-center">
+                        <button type="button" onClick={() => setIsProfileExpanded(false)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-2xl font-black rounded-2xl shadow-lg transition-all">
+                           ✅ 完成填寫 (Done)
+                        </button>
+                     </div>
+                  )}
                 </div>
               </div>
 
+              {/* Dim background overlay when enlarged */}
+              {isProfileExpanded && <div className="fixed inset-0 bg-black/60 z-[190] backdrop-blur-sm transition-all" onClick={() => setIsProfileExpanded(false)}></div>}
+
+              {/* Right Side Columns */}
               <div className="lg:col-span-7 bg-[#F6EFE9] border border-[#E8DCC8] rounded-[2.5rem] p-8 shadow-sm flex flex-col relative">
                    <div className="absolute top-0 left-0 right-0 h-3" style={{ backgroundColor: activeTheme.hex }}></div>
                    
@@ -708,22 +841,15 @@ export default function App() {
                    <div className="bg-white rounded-3xl p-5 border border-[#E8DCC8] shadow-sm mb-6 flex-1 flex flex-col">
                       <div className="flex justify-between items-center mb-2">
                           <label className="block text-sm font-bold uppercase tracking-wider text-gray-500">化學配方與備註</label>
-                          {currentProfile?.latestFormula && (
-                              <button type="button" onClick={() => { playAudioFeedback('success'); handleInputChange('formula', currentProfile.latestFormula); triggerNotification('✅ 已成功帶入上次配方'); }} className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shadow-sm"><Icons.Refresh /> <span>♻️ 帶入上次配方</span></button>
-                          )}
                       </div>
                       <textarea rows={3} placeholder="例: 8B 70ml + 7MT 30ml + 9%..." value={formData.formula} onChange={(e) => handleInputChange('formula', e.target.value)} className="w-full flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xl font-mono focus:bg-white outline-none focus:border-[#8B5A2B] transition-colors mb-4" />
                       
-                      <div className="flex gap-4 items-center">
-                          <div className="flex-1">
-                             <label className="block text-xs font-bold uppercase text-gray-400 mb-1">下次建議快捷鍵</label>
-                             <div className="flex gap-2">
-                                {['3週後修剪', '4週後修剪', '8週後補染'].map(sg => <button key={sg} type="button" onClick={() => setFormData(p => ({...p, nextSuggest: sg}))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors">{sg}</button>)}
-                             </div>
-                          </div>
-                          <div className="flex-1">
-                             <button type="button" onClick={capturePhoto} className={`w-full py-3 rounded-xl font-black text-white shadow-md flex items-center justify-center gap-2 transition-all ${isUploadingPhoto ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`} disabled={isUploadingPhoto}>{isUploadingPhoto ? <Icons.Refresh className="animate-spin" /> : <Icons.Photo />} <span>{isUploadingPhoto ? '上傳中...' : formData.photoLink ? '✅ 已綁定照片' : '📷 拍照上傳'}</span></button>
-                          </div>
+                      {/* Photo Section */}
+                      <div className="mt-auto pt-4 border-t border-[#E8DCC8]">
+                          <button type="button" onClick={capturePhoto} className={`w-full py-4 rounded-2xl font-black text-white shadow-md flex items-center justify-center gap-2 transition-all text-lg ${isUploadingPhoto ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`} disabled={isUploadingPhoto}>
+                              {isUploadingPhoto ? <Icons.Refresh className="animate-spin inline-block w-6 h-6" /> : <Icons.Photo className="w-6 h-6" />} 
+                              <span>{isUploadingPhoto ? '上傳中 (Uploading)...' : formData.photoLink ? '✅ 已綁定照片 (Photo Bound)' : '📷 拍照上傳 (Take Photo)'}</span>
+                          </button>
                       </div>
                    </div>
 
@@ -735,6 +861,7 @@ export default function App() {
           </form>
         )}
 
+        {/* CRM TAB */}
         {}
         {activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6">
@@ -789,13 +916,20 @@ export default function App() {
                     <div className="mt-2">
                       <button onClick={() => setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]}))} className="w-full py-3 flex items-center justify-center space-x-2 text-lg font-bold rounded-xl transition-colors hover:bg-gray-100" style={{ color: clientTheme.hex, backgroundColor: clientTheme.light }}><Icons.History /> <span>{isExpanded ? '隱藏紀錄' : `展開完整紀錄 (${client.visitCount} 次)`}</span></button>
                       {isExpanded && (
-                        <div className="mt-4 space-y-3 animate-in slide-in-from-top-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
+                        <div className="mt-4 space-y-3 animate-in slide-in-from-top-2 max-h-[450px] overflow-y-auto custom-scrollbar pr-2">
                           {client.visits.map((v, vIdx) => (
-                            <div key={vIdx} className="bg-white border-2 p-3 rounded-2xl shadow-sm relative group/record" style={{ borderColor: clientTheme.light }}>
+                            <div key={vIdx} className="bg-white border-2 p-3 rounded-2xl shadow-sm relative group/record flex flex-col" style={{ borderColor: clientTheme.light }}>
                               <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12"><div className="flex items-center gap-2"><span>{parseDateFlexible(v.date)}</span></div><span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span></div>
                               <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
                               {v.formula && <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 break-words whitespace-pre-wrap">{v.formula}</p>}
-                              {v.photoLink && v.photoLink.includes('http') && <a href={v.photoLink} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline mt-1 block">查看照片</a>}
+                              
+                              {/* Visible View Photo Link (查看照片) */}
+                              {v.photoLink && v.photoLink !== 'Local Image Bound' && (
+                                <a href={v.photoLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-100 transition-colors shadow-sm self-start">
+                                  <Icons.Photo className="w-4 h-4" /> <span>查看照片 (View Photo)</span>
+                                </a>
+                              )}
+
                               <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover/record:opacity-100 transition-opacity">
                                  <button onClick={() => setEditModal({...v, firstName: client.fullName, customerId: client.customerId})} className="p-1.5 bg-gray-100 hover:text-blue-600 text-gray-500 rounded-lg"><Icons.Edit /></button>
                                  <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.serviceId !== v.serviceId)); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
@@ -812,6 +946,7 @@ export default function App() {
           </div>
         )}
 
+        {/* DASHBOARD TAB */}
         {}
         {activeTab === 'dashboard' && (
           <div className="max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-300 pb-10">
@@ -861,23 +996,23 @@ export default function App() {
                 <div className="lg:col-span-8 bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm">
                     <h3 className="text-xl font-black mb-6 text-[#4A2511] flex items-center gap-2"><Icons.Gift /> 推薦計畫成效追蹤 (Referral Program)</h3>
                     <div className="flex flex-col md:flex-row gap-6 items-center mb-6">
-                        <div className="bg-pink-50 p-5 rounded-2xl flex-1 border border-pink-100 w-full text-center md:text-left"><p className="text-sm font-bold text-pink-600 mb-1">推薦引入新客數</p><p className="text-4xl font-black text-pink-700">{dashboardData.referral.totalReferred} <span className="text-lg text-pink-500">位</span></p></div>
-                        <div className="bg-emerald-50 p-5 rounded-2xl flex-1 border border-emerald-100 w-full text-center md:text-left"><p className="text-sm font-bold text-emerald-600 mb-1">推薦產生營收 (Referral Revenue)</p><p className="text-4xl font-black text-emerald-700">${dashboardData.referral.revenue.toLocaleString()}</p></div>
+                        <div className="bg-pink-50 p-5 rounded-2xl flex-1 border border-pink-100 w-full text-center md:text-left"><p className="text-sm font-bold text-pink-600 mb-1">歷史推薦新客總數 (All Time)</p><p className="text-4xl font-black text-pink-700">{dashboardData.referral.totalReferred} <span className="text-lg text-pink-500">位</span></p></div>
+                        <div className="bg-emerald-50 p-5 rounded-2xl flex-1 border border-emerald-100 w-full text-center md:text-left"><p className="text-sm font-bold text-emerald-600 mb-1">歷史推薦總營收 (All Time)</p><p className="text-4xl font-black text-emerald-700">${dashboardData.referral.revenue.toLocaleString()}</p></div>
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">👑 Top 推薦達人 排行榜 (Top Referrers)</h4>
+                        <h4 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">👑 Top 推薦達人 排行榜 (Top 5 All Time)</h4>
                         <div className="space-y-2">
                             {dashboardData.referral.topReferrers.length > 0 ? dashboardData.referral.topReferrers.map((r, i) => (
                                 <div key={i} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
                                     <div className="flex items-center gap-3"><span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-bold text-xs">{i+1}</span><span className="font-bold text-[#4A2511] text-lg">{r.name}</span></div>
                                     <div className="flex gap-4 text-sm font-bold"><span className="text-gray-500">{r.count} 位</span><span className="text-emerald-600">${r.revenue.toLocaleString()}</span></div>
                                 </div>
-                            )) : <div className="text-sm font-bold text-gray-400 p-4 text-center bg-gray-50 rounded-xl">此期間尚無推薦紀錄</div>}
+                            )) : <div className="text-sm font-bold text-gray-400 p-4 text-center bg-gray-50 rounded-xl">資料庫尚無推薦紀錄</div>}
                         </div>
                     </div>
                 </div>
                 <div className="lg:col-span-4 bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm h-full flex flex-col">
-                 <h3 className="text-xl font-black mb-6 text-[#4A2511]">新客來源分布</h3>
+                 <h3 className="text-xl font-black mb-6 text-[#4A2511]">新客來源分布 (本期)</h3>
                  {dashboardData.sourceChart.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -957,7 +1092,7 @@ export default function App() {
                      <div className="col-span-2">服務日期 / 建立時間</div><div className="col-span-2">交易單號</div><div className="col-span-2">客戶姓名</div><div className="col-span-1 text-center">設計師</div><div className="col-span-3">服務/產品項目</div><div className="col-span-1">支付方式</div><div className="col-span-1 text-right">總額</div>
                   </div>
                   <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-                     {dashboardData.records.length > 0 ? dashboardData.records.sort((a,b)=>new Date(b.timestamp||b.date) - new Date(a.timestamp||a.date)).map((r, i) => {
+                     {dashboardData.records.length > 0 ? dashboardData.records.sort((a,b)=>new Date(b.timestamp||b.date).getTime() - new Date(a.timestamp||a.date).getTime()).map((r, i) => {
                          const dateObj = new Date(r.timestamp || r.date); const isDateValid = !isNaN(dateObj.getTime()); const styTheme = STYLIST_THEMES[r.stylist] || STYLIST_THEMES['Others'];
                          return (
                              <div key={i} onClick={() => setEditModal(r)} className="grid grid-cols-12 gap-4 px-6 py-5 border-b border-gray-100 items-center hover:bg-gray-50 cursor-pointer transition-colors group">
@@ -977,6 +1112,7 @@ export default function App() {
           </div>
         )}
 
+        {/* DATAHUB TAB */}
         {}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
@@ -990,7 +1126,7 @@ export default function App() {
            </div>
         )}
 
-        {}
+        {/* DATAHUB TAB UNLOCKED */}
         {activeTab === 'datahub' && dataHubUnlocked && (
           <div className="max-w-[1500px] mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
@@ -1027,8 +1163,8 @@ export default function App() {
                           <label className="flex-1 border-2 border-[#8B5A2B] bg-[#8B5A2B] text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#6D3A14] cursor-pointer">
                               <Icons.Upload /> 匯入 JSON
                               <input type="file" accept=".json" className="hidden" onChange={(e) => {
-                                  const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-                                  reader.onload = (event) => { setConfirmDialog({ title: '確認還原 JSON', message: '這將覆蓋目前的系統資料。確定繼續嗎？', onConfirm: () => { try { setRawHistoryRecords(JSON.parse(event.target.result)); triggerNotification('✅ JSON 資料還原成功'); } catch(err) { triggerNotification('❌ 檔案格式錯誤'); } } }); }; reader.readAsText(file); e.target.value = '';
+                                  const file = (e.target as any).files[0]; if (!file) return; const reader = new FileReader();
+                                  reader.onload = (event) => { setConfirmDialog({ title: '確認還原 JSON', message: '這將覆蓋目前的系統資料。確定繼續嗎？', onConfirm: () => { try { setRawHistoryRecords(JSON.parse(event.target.result as string)); triggerNotification('✅ JSON 資料還原成功'); } catch(err) { triggerNotification('❌ 檔案格式錯誤'); } } }); }; reader.readAsText(file); e.target.value = '';
                               }} />
                           </label>
                       </div>
@@ -1043,20 +1179,22 @@ export default function App() {
       </main>
 
       {}
+      {/* CONFIRM DIALOG MODAL */}
       {confirmDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
             <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Icons.AlertTriangle /></div>
             <h3 className="text-2xl font-black mb-2 text-gray-800">{confirmDialog.title}</h3>
-            <p className="text-gray-500 font-bold text-sm mb-8 leading-relaxed">{confirmDialog.message}</p>
+            <p className="text-gray-500 font-bold text-sm mb-8 leading-relaxed whitespace-pre-wrap">{confirmDialog.message}</p>
             <div className="flex gap-3">
-               <button onClick={() => setConfirmDialog(null)} className="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">取消</button>
-               <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} className="flex-1 py-3 rounded-xl font-black bg-red-500 text-white shadow-md hover:bg-red-600 transition-colors">確認執行</button>
+               <button onClick={() => { if(confirmDialog.onCancel) confirmDialog.onCancel(); setConfirmDialog(null); }} className="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">取消 (Cancel)</button>
+               <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} className="flex-1 py-3 rounded-xl font-black bg-red-500 text-white shadow-md hover:bg-red-600 transition-colors">確認 (Confirm)</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300">
@@ -1071,6 +1209,25 @@ export default function App() {
         </div>
       )}
 
+      {/* SMART FORMULA POPUP MODAL */}
+      {confirmFormulaModal && (
+        <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
+             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 text-center">
+                 <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4"><Icons.Refresh className="w-8 h-8" /></div>
+                 <h3 className="text-2xl font-black mb-2 text-gray-800">載入歷史配方？</h3>
+                 <p className="text-gray-500 font-bold text-sm mb-4">系統發現 <span className="text-[#8B5A2B]">{confirmFormulaModal.name}</span> 有歷史化學配方：</p>
+                 <div className="bg-gray-50 p-4 rounded-xl text-left font-mono text-sm text-gray-700 mb-6 border border-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
+                    {confirmFormulaModal.formula}
+                 </div>
+                 <div className="flex gap-3">
+                    <button onClick={() => { setConfirmFormulaModal(null); }} className="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">取消 (維持空白)</button>
+                    <button onClick={() => { handleInputChange('formula', confirmFormulaModal.formula); setConfirmFormulaModal(null); playAudioFeedback('success'); }} className="flex-1 py-3 rounded-xl font-black bg-blue-500 text-white shadow-md hover:bg-blue-600 transition-colors">✅ 確認載入</button>
+                 </div>
+             </div>
+        </div>
+      )}
+
+      {/* SCHEDULER ADD/EDIT MODAL */}
       {schedAddEditModal && (
          <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
              <form onSubmit={handleSaveCalendarEvent} className="bg-white rounded-[2rem] max-w-md w-full p-8 shadow-2xl animate-in zoom-in-95 overflow-visible relative">
@@ -1108,13 +1265,14 @@ export default function App() {
                          <div><label className="block text-xs font-bold mb-1 text-gray-500">設計師</label><select required value={schedAddEditModal.stylist} onChange={e=>setSchedAddEditModal({...schedAddEditModal, stylist: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none">{stylists.filter(s=>s!=='Others').map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                          <div><label className="block text-xs font-bold mb-1 text-gray-500">預計時長 (自動估算)</label><select required value={schedAddEditModal.duration} onChange={e=>setSchedAddEditModal({...schedAddEditModal, duration: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none text-[#8B5A2B]"><option value="30">30 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option><option value="150">150 min</option><option value="180">180 min</option><option value="240">240 min</option></select></div>
                      </div>
-                     <div><label className="block text-xs font-bold mb-1 text-gray-500">備註 (Optional)</label><textarea rows="2" placeholder="特別要求..." value={schedAddEditModal.notes} onChange={e=>setSchedAddEditModal({...schedAddEditModal, notes: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none" /></div>
+                     <div><label className="block text-xs font-bold mb-1 text-gray-500">備註 (Optional)</label><textarea rows={2} placeholder="特別要求..." value={schedAddEditModal.notes} onChange={e=>setSchedAddEditModal({...schedAddEditModal, notes: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-4 font-bold outline-none" /></div>
                  </div>
                  <button type="submit" className="w-full mt-6 bg-[#8B5A2B] text-white font-black py-4 rounded-xl shadow-lg hover:bg-[#6D3A14]">儲存預約 (Save)</button>
              </form>
          </div>
       )}
 
+      {/* SCHEDULER DETAIL MODAL */}
       {schedDetailModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 relative border-4" style={{ borderColor: STYLIST_THEMES[schedDetailModal.stylist].hex }}>
@@ -1151,7 +1309,7 @@ export default function App() {
                 <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto mb-4 custom-scrollbar p-1">
                     {interestTags.map((tag, idx) => ( <div key={idx} className="flex items-center gap-1 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl"><span className="font-bold text-gray-700 text-sm">{tag}</span><button onClick={() => setInterestTags(interestTags.filter(t => t !== tag))} className="text-red-400 hover:text-red-600 ml-1"><Icons.X/></button></div> ))}
                 </div>
-                <form onSubmit={(e) => { e.preventDefault(); const val = e.target.newTag.value.trim(); if(val && !interestTags.includes(val)) { setInterestTags([...interestTags, val]); e.target.newTag.value = ''; } }} className="flex gap-2">
+                <form onSubmit={(e) => { e.preventDefault(); const val = (e.target as any).newTag.value.trim(); if(val && !interestTags.includes(val)) { setInterestTags([...interestTags, val]); (e.target as any).newTag.value = ''; } }} className="flex gap-2">
                     <input type="text" name="newTag" placeholder="新增標籤名稱..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none font-bold text-sm" />
                     <button type="submit" className="bg-[#8B5A2B] text-white px-4 py-2 rounded-xl font-bold"><Icons.Plus/></button>
                 </form>
@@ -1166,7 +1324,7 @@ export default function App() {
                 <div className="space-y-2 max-h-[300px] overflow-y-auto mb-4 custom-scrollbar">
                     {hairServices.map((svc, idx) => ( <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl"><span className="font-bold text-gray-700 text-sm">{svc}</span><button onClick={() => setHairServices(hairServices.filter(s => s !== svc))} className="text-red-400 hover:text-red-600"><Icons.Trash/></button></div> ))}
                 </div>
-                <form onSubmit={(e) => { e.preventDefault(); const val = e.target.newSvc.value.trim(); if(val && !hairServices.includes(val)) { setHairServices([...hairServices, val]); e.target.newSvc.value = ''; } }} className="flex gap-2">
+                <form onSubmit={(e) => { e.preventDefault(); const val = (e.target as any).newSvc.value.trim(); if(val && !hairServices.includes(val)) { setHairServices([...hairServices, val]); (e.target as any).newSvc.value = ''; } }} className="flex gap-2">
                     <input type="text" name="newSvc" placeholder="新增服務名稱..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none font-bold text-sm" />
                     <button type="submit" className="bg-[#8B5A2B] text-white px-4 py-2 rounded-xl font-bold"><Icons.Plus/></button>
                 </form>
@@ -1174,6 +1332,7 @@ export default function App() {
         </div>
       )}
 
+      {/* RECORD EDIT MODAL */}
       {editModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
@@ -1191,19 +1350,20 @@ export default function App() {
               <div><label className="block text-xs font-bold mb-1 text-gray-500">日期</label><input type="date" value={parseDateFlexible(editModal.date)} onChange={e=>setEditModal({...editModal, date: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border" /></div>
               <div><label className="block text-xs font-bold mb-1 text-gray-500">總金額 $</label><input type="number" value={editModal.price} onChange={e=>setEditModal({...editModal, price: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border" /></div>
               <div className="col-span-2"><label className="block text-xs font-bold mb-1 text-gray-500">服務與產品</label><input type="text" value={editModal.services||''} onChange={e=>setEditModal({...editModal, services: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border" /></div>
-              <div className="col-span-2"><label className="block text-xs font-bold mb-1 text-gray-500">配方</label><textarea rows="3" value={editModal.formula||''} onChange={e=>setEditModal({...editModal, formula: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border font-mono text-sm" /></div>
+              <div className="col-span-2"><label className="block text-xs font-bold mb-1 text-gray-500">配方</label><textarea rows={3} value={editModal.formula||''} onChange={e=>setEditModal({...editModal, formula: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border font-mono text-sm" /></div>
             </div>
             <button type="submit" className="w-full py-4 mt-2 rounded-xl font-black text-xl text-white bg-[#8B5A2B] hover:bg-[#6D3A14] shadow-md transition-colors">儲存更新</button>
           </form>
         </div>
       )}
 
+      {/* PROFILE EDIT MODAL */}
       {profileEditData && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
-            e.preventDefault(); const newFullName = e.target.fullName.value.trim();
+            e.preventDefault(); const newFullName = (e.target as any).fullName.value.trim();
             setRawHistoryRecords(prev => {
-                const newRecords = prev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: e.target.gender.value, language: e.target.language.value, phone: e.target.phone.value, interests: profileEditData.interests.join(', ') } : r);
+                const newRecords = prev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: (e.target as any).gender.value, language: (e.target as any).language.value, phone: (e.target as any).phone.value, interests: profileEditData.interests.join(', ') } : r);
                 if (driveApiUrl) { fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: newRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{}); }
                 return newRecords;
             });
