@@ -81,13 +81,13 @@ export default function App() {
   const [editModal, setEditModal] = useState(null); 
   const [profileEditData, setProfileEditData] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
-  const [confirmFormulaModal, setConfirmFormulaModal] = useState(null);
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showTagsConfig, setShowTagsConfig] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
 
-  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13_6') || 'https://script.google.com/macros/s/AKfycbxCv4qRXnzrAimYoRfI1fwJLqM4P9NfyAAumRalugmgUhTs0eKEop3Z712JKET8rIgbKQ/exec');
-  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13_6') || 'https://script.google.com/macros/s/AKfycbyuAjmjMvUoJz2ZrMXXCeZ-zn0F9Gk2CG2R1-hyUm8dmd-u76rvkzW0xUJNtMP5nSzFdQ/exec');
+  // APIs Embedded as Default Values
+  const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13_9') || 'https://script.google.com/macros/s/AKfycbxCv4qRXnzrAimYoRfI1fwJLqM4P9NfyAAumRalugmgUhTs0eKEop3Z712JKET8rIgbKQ/exec');
+  const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13_9') || 'https://script.google.com/macros/s/AKfycbwcxZHp2p19GyIew9o0WRz9w8hIMSDu1qJIoJgStMX6tKez7PIK2dGohoPvrl7WVwj9qw/exec');
   
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -113,70 +113,52 @@ export default function App() {
   useEffect(() => { const interval = setInterval(() => setCurrentTime(new Date()), 60000); return () => clearInterval(interval); }, []);
   useEffect(() => { localStorage.setItem('headline_services_v11', JSON.stringify(hairServices)); }, [hairServices]);
   useEffect(() => { localStorage.setItem('headline_tags_v1', JSON.stringify(interestTags)); }, [interestTags]);
-  useEffect(() => { localStorage.setItem('headline_drive_api_v13_6', driveApiUrl); }, [driveApiUrl]);
-  useEffect(() => { localStorage.setItem('headline_calendar_api_v13_6', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_drive_api_v13_9', driveApiUrl); }, [driveApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_calendar_api_v13_9', calendarApiUrl); }, [calendarApiUrl]);
 
   const getApiUrl = (baseUrl, action) => { if (!baseUrl) return ''; try { const url = new URL(baseUrl); url.searchParams.set('action', action); return url.toString(); } catch (e) { return `${baseUrl}?action=${action}`; } };
 
   const fetchCalendarEvents = async () => {
-    if (!calendarApiUrl) return; 
-    setIsCalendarLoading(true);
-    try { 
-        // REMOVED 'headers' to fix CORS preflight issue on Google Apps Script GET request!
-        const res = await fetch(getApiUrl(calendarApiUrl, 'get_events')); 
-        const data = await res.json(); 
-        if (data.status === 'success') {
-            setCalendarEvents(data.data || []); 
-        } else {
-            console.error("Calendar API format mismatch", data);
-        }
-    } catch (e) { 
-        console.error("Calendar Sync Error:", e);
-    } finally { 
-        setIsCalendarLoading(false); 
-    }
+    if (!calendarApiUrl) return; setIsCalendarLoading(true);
+    try { const res = await fetch(getApiUrl(calendarApiUrl, 'get_events'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const data = await res.json(); if (data.status === 'success') setCalendarEvents(data.data); } catch (e) {} finally { setIsCalendarLoading(false); }
   };
   
   const handleGlobalSync = async () => {
+    if (!driveApiUrl) return;
     setIsSyncing(true);
-    let successCount = 0;
-    
-    if (driveApiUrl) {
-      try {
-        // REMOVED headers to fix CORS preflight issue on GET
-        const res = await fetch(getApiUrl(driveApiUrl, 'get_all'));
-        const result = await res.json();
-        if (result.status === 'success' && result.data) {
-          setRawHistoryRecords(result.data);
-          successCount++;
-        }
-      } catch(e) { console.error("Drive Sync Fail:", e); }
+    try {
+      const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+      const result = await res.json();
+      if (result.status === 'success' && result.data && Array.isArray(result.data)) {
+        setRawHistoryRecords(result.data);
+      }
+      if (calendarApiUrl) {
+          await fetchCalendarEvents();
+      }
+      triggerNotification('✅ 資料已與雲端同步 (Synced with Cloud)');
+    } catch(e) {
+      triggerNotification('❌ 無法連線至雲端');
+    } finally {
+      setIsSyncing(false);
     }
-    
-    if (calendarApiUrl) {
-      try {
-        await fetchCalendarEvents();
-        successCount++;
-      } catch(e) { console.error("Calendar Sync Fail:", e); }
-    }
-    
-    if (successCount > 0) triggerNotification('✅ 資料同步完成 (Synced)');
-    else triggerNotification('❌ 無法連線至雲端 (Sync Failed)');
-    
-    setIsSyncing(false);
   };
 
   useEffect(() => {
-    handleGlobalSync();
+    if (driveApiUrl) handleGlobalSync();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const generateServiceId = () => {
-    const d = new Date();
-    return `S-${String(d.getFullYear()).slice(-2)}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.floor(Math.random()*9000+1000)}`;
+  const generateServiceId = (dateStr, records = []) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const prefix = `S${yy}${mm}${dd}-`;
+    const todaysRecords = records.filter(r => r.serviceId && r.serviceId.startsWith(prefix));
+    return `${prefix}${String(todaysRecords.length + 1).padStart(2, '0')}`;
   };
 
-  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', serviceId: generateServiceId(), _eventId: null, _stylist: null });
+  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', serviceId: '', _eventId: null, _stylist: null });
 
   const [formData, setFormData] = useState(getInitialForm());
   const [submitting, setSubmitting] = useState(false);
@@ -184,10 +166,23 @@ export default function App() {
   const [showNameSuggest, setShowNameSuggest] = useState(false);
   const [nameSuggests, setNameSuggests] = useState([]);
   
-  const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { try { const parsed = JSON.parse(localStorage.getItem('headline_salon_history_v11') || '[]'); return Array.isArray(parsed) ? parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` })) : []; } catch(e) { return []; } });
-  const historyRecords = useMemo(() => { return rawHistoryRecords.map(r => ({...r, stylist: r.stylist ? String(r.stylist).trim() : 'Unknown', price: Number(String(r.price).replace(/[^0-9.-]+/g, "")) || 0})); }, [rawHistoryRecords]);
+  // CRASH PROTECTION: Guarantee rawHistoryRecords is an Array.
+  const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { 
+      try { 
+          const parsed = JSON.parse(localStorage.getItem('headline_salon_history_v11') || '[]'); 
+          return Array.isArray(parsed) ? parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` })) : []; 
+      } catch(e) { return []; } 
+  });
+  
+  const safeRawRecords = Array.isArray(rawHistoryRecords) ? rawHistoryRecords : [];
+
+  const historyRecords = useMemo(() => { 
+      return safeRawRecords.map(r => ({...r, stylist: r.stylist ? String(r.stylist).trim() : 'Unknown', price: Number(String(r.price).replace(/[^0-9.-]+/g, "")) || 0})); 
+  }, [safeRawRecords]);
+  
   const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
-  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(rawHistoryRecords)); }, [rawHistoryRecords]);
+  
+  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(safeRawRecords)); }, [safeRawRecords]);
 
   const triggerNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
   const handleTabChange = (tab) => { playAudioFeedback('click'); setActiveTab(tab); if(tab !== 'datahub') setDataHubUnlocked(false); setIsProfileExpanded(false); };
@@ -230,8 +225,8 @@ export default function App() {
     Object.values(profiles).forEach(p => {
         if (p.customerId) {
             p.referralsMade = historyRecords.filter(r => {
-                const ref = String(r.referredBy || '').trim().toLowerCase();
-                if (!ref) return false;
+                if (!r.referredBy || !r.referredBy.trim()) return false;
+                const ref = r.referredBy.toLowerCase();
                 return ref.includes(p.customerId.toLowerCase()) || (p.phone && p.phone.length > 5 && ref.includes(p.phone)) || (p.fullName && p.fullName.length > 1 && ref.includes(p.fullName.toLowerCase()));
             }).length;
         }
@@ -240,7 +235,7 @@ export default function App() {
     let result = Object.values(profiles).map(p => {
       let tags = [];
       if (p.totalSpent >= 8000) tags.push({ label: 'VIP', color: 'bg-amber-100 text-amber-900 border-amber-300' });
-      const isReferred = p.visits.some(v => v.customerSource?.includes('Referral') || String(v.referredBy || '').trim() !== '');
+      const isReferred = p.visits.some(v => v.customerSource?.includes('Referral') || v.referredBy?.trim());
       if (p.visitCount === 1) tags.push({ label: isReferred ? '🎁 推薦新客' : '新客', color: isReferred ? 'bg-pink-100 text-pink-800' : 'bg-emerald-100 text-emerald-900' });
       if (p.referralsMade > 0) tags.push({ label: `⭐ 推薦達人 (${p.referralsMade})`, color: 'bg-yellow-100 text-yellow-800' });
       
@@ -264,7 +259,6 @@ export default function App() {
     if (crmSortBy === 'visitCount') sortedResult.sort((a, b) => b.visitCount - a.visitCount);
     if (crmSortBy === 'name_asc') sortedResult.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     if (crmSortBy === 'stylist') {
-        // Enforce specific Stylist Sort Order
         const order = { 'Man': 1, 'Becky': 2, 'Sammy': 3, 'Others': 4 };
         sortedResult.sort((a, b) => (order[a.preferredStylist] || 4) - (order[b.preferredStylist] || 4));
     }
@@ -286,39 +280,35 @@ export default function App() {
     const currentRange = getPeriodRange(dashboardPeriod, dashboardDateRef, 0);
     const prevRange = dashboardPeriod !== 'custom' ? getPeriodRange(dashboardPeriod, dashboardDateRef, -1) : null;
 
-    let globalReferralMap = {}; 
-    let globalRefTotal = 0, globalRefRev = 0;
-    
-    // Calculates Top Referrers safely across ALL history regardless of dates
-    historyRecords.forEach(r => {
-        const isRef = String(r.customerSource || '').includes('Referral') || String(r.customerSource || '').includes('朋友介紹') || String(r.referredBy || '').trim() !== '';
-        if (isRef) {
-            globalRefTotal++; 
-            globalRefRev += r.price;
-            const refKey = String(r.referredBy || '').trim();
-            if (refKey) {
-                if(!globalReferralMap[refKey]) globalReferralMap[refKey] = { name: refKey, count: 0, revenue: 0 };
-                globalReferralMap[refKey].count += 1; 
-                globalReferralMap[refKey].revenue += r.price;
-            }
-        }
-    });
-    const topReferrersList = Object.values(globalReferralMap).sort((a,b) => b.count - a.count).slice(0, 5);
-
     const getMetrics = (start, end) => {
         const records = historyRecords.filter(r => !r.isProfileOnly && new Date(parseDateFlexible(r.date)) >= start && new Date(parseDateFlexible(r.date)) <= end);
         let m = { rev: 0, clients: records.length, retail: 0, newCus: 0, male: 0, female: 0, en: 0, cn: 0, zh: 0 };
         let dailyMap = {}, serviceMap = {}, stylistMap = { Man: { revenue: 0, count: 0 }, Becky: { revenue: 0, count: 0 }, Sammy: { revenue: 0, count: 0 }, Others: { revenue: 0, count: 0 } }, sourceMap = {};
         
+        let globalReferralMap = {}; 
+        let refTotal = 0, refRev = 0;
+        
+        // Calculate Top Referrers across ALL history to ensure the leaderboard is always populated
+        historyRecords.forEach(r => {
+            if (r.customerSource?.includes('Referral') || r.customerSource?.includes('朋友介紹') || (r.referredBy && r.referredBy.trim() !== '')) {
+                refTotal++; refRev += r.price;
+                if (r.referredBy && r.referredBy.trim()) {
+                    const refKey = r.referredBy.trim();
+                    if(!globalReferralMap[refKey]) globalReferralMap[refKey] = { name: refKey, count: 0, revenue: 0 };
+                    globalReferralMap[refKey].count += 1; globalReferralMap[refKey].revenue += r.price;
+                }
+            }
+        });
+
         records.forEach(r => {
             m.rev += r.price; 
             const sSub = parsePriceRobust(r.subtotal), rSub = parsePriceRobust(r.retailPrice);
             if (sSub + rSub > 0) m.retail += (rSub / (sSub + rSub)) * r.price; else if (rSub > 0) m.retail += r.price;
             if (r.gender === 'Male') m.male++; else m.female++;
             if (r.language === 'EN') m.en++; else m.zh++; 
-            if (String(r.customerSource || '').includes('新客')) {
+            if (r.customerSource?.includes('新客')) {
                 m.newCus++;
-                let src = String(r.customerSource || '').includes('Referral') ? '朋友介紹' : (String(r.customerSource || '').includes('IG') || String(r.customerSource || '').includes('FB') ? 'IG/FB' : 'Walk-in');
+                let src = r.customerSource.includes('Referral') ? '朋友介紹' : (r.customerSource.includes('IG') || r.customerSource.includes('FB') ? 'IG/FB' : 'Walk-in');
                 sourceMap[src] = (sourceMap[src] || 0) + 1;
             }
             const sty = ['Man', 'Becky', 'Sammy'].includes(cleanStylistName(r.stylist)) ? cleanStylistName(r.stylist) : 'Others';
@@ -336,8 +326,8 @@ export default function App() {
                 serviceMap[s][sty] += 1; serviceMap[s].total += 1;
             });
         });
-        
-        return { ...m, dailyChart: Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate), serviceChart: Object.values(serviceMap).sort((a,b)=>b.total-a.total).slice(0,8), stylistChart: Object.keys(stylistMap).map(k => ({ name: k, ...stylistMap[k] })).sort((a,b)=>b.revenue-a.revenue), sourceChart: Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })), records };
+        const topReferrers = Object.values(globalReferralMap).sort((a,b)=>b.count - a.count).slice(0, 5);
+        return { ...m, dailyChart: Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate), serviceChart: Object.values(serviceMap).sort((a,b)=>b.total-a.total).slice(0,8), stylistChart: Object.keys(stylistMap).map(k => ({ name: k, ...stylistMap[k] })).sort((a,b)=>b.revenue-a.revenue), sourceChart: Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] })), records, referral: { totalReferred: refTotal, revenue: refRev, topReferrers } };
     };
 
     const curr = getMetrics(currentRange.start, currentRange.end);
@@ -352,7 +342,6 @@ export default function App() {
         malePct: curr.clients ? ((curr.male / curr.clients) * 100).toFixed(0) : 0, femalePct: curr.clients ? ((curr.female / curr.clients) * 100).toFixed(0) : 0,
         enPct: (curr.en+curr.zh) ? ((curr.en / (curr.en+curr.zh)) * 100).toFixed(0) : 0, zhPct: (curr.en+curr.zh) ? ((curr.zh / (curr.en+curr.zh)) * 100).toFixed(0) : 0, 
         newCusPct: curr.clients ? ((curr.newCus / curr.clients) * 100).toFixed(0) : 0, retCusPct: curr.clients ? (((curr.clients - curr.newCus) / curr.clients) * 100).toFixed(0) : 0,
-        referral: { totalReferred: globalRefTotal, revenue: globalRefRev, topReferrers: topReferrersList }
     };
   }, [historyRecords, dashboardPeriod, dashboardDateRef, dashboardStartDate, dashboardEndDate]);
 
@@ -370,8 +359,6 @@ export default function App() {
     const payload = { action: 'create_event', stylist: schedAddEditModal.stylist, title: `${schedAddEditModal.clientName} | ${schedAddEditModal.service}`, description: schedAddEditModal.phone ? `Phone: ${schedAddEditModal.phone}\n${schedAddEditModal.notes}` : schedAddEditModal.notes, startTime: start.toISOString(), endTime: end.toISOString() };
     setCalendarEvents(prev => [...prev.filter(ev => ev.id !== schedAddEditModal.id), { id: fakeId, ...payload }]); setSchedAddEditModal(null); playAudioFeedback('success');
     if (!calendarApiUrl) return triggerNotification('✅ 已本地新增預約 (未設定 API)');
-    
-    // POST request is safe from CORS preflight issues when using text/plain
     if (schedAddEditModal.id) { try { await fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', stylist: schedAddEditModal.oldStylist, eventId: schedAddEditModal.id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); } catch(err) {} }
     try { triggerNotification('⏳ 雲端同步中...'); const res = await fetch(getApiUrl(calendarApiUrl, 'create_event'), { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success') { triggerNotification('✅ 預約已同步至 Google 日曆！'); fetchCalendarEvents(); } } catch(err) { triggerNotification('❌ 同步失敗'); }
   };
@@ -383,14 +370,21 @@ export default function App() {
     if (val.trim().length > 0) { const matches = crmProfiles.filter(p => String(p.fullName || '').toLowerCase().includes(val.toLowerCase()) || (p.phone && String(p.phone).includes(val))); setNameSuggests(matches); setShowNameSuggest(matches.length > 0); } else { setShowNameSuggest(false); setFormData(prev => ({ ...prev, customerId: '' })); }
   };
 
-  const handleSelectSuggest = (profile, extraData = {}) => {
+  const handleSelectSuggest = (profile) => {
     playAudioFeedback('click');
-    setFormData(prev => ({ ...prev, customerId: profile.customerId, clientType: 'Repeated', firstName: profile.fullName || '', lastName: '', gender: profile.gender || 'Female', language: profile.language || '中文', phone: profile.phone || '', email: profile.email || '', edmConsent: profile.edmConsent || '', birthMonth: profile.birthMonth || '', customerSource: '舊客 (Repeated)', interests: profile.interests || [], formula: '', ...extraData }));
+    setFormData(prev => ({ ...prev, customerId: profile.customerId, clientType: 'Repeated', firstName: profile.fullName || '', lastName: '', gender: profile.gender || 'Female', language: profile.language || '中文', phone: profile.phone || '', email: profile.email || '', edmConsent: profile.edmConsent || '', birthMonth: profile.birthMonth || '', customerSource: '舊客 (Repeated)', interests: profile.interests || [], formula: '' }));
     setShowNameSuggest(false);
     
-    // Feature: Smart Formula Retrieval Popup 
-    if (profile.latestFormula && profile.latestFormula.trim() !== '') {
-        setConfirmFormulaModal({ name: profile.fullName, formula: profile.latestFormula });
+    // Smart Formula Retrieval Popup
+    if (profile.latestFormula) {
+        setConfirmDialog({
+            title: '載入歷史配方 (Load History Formula)',
+            message: `偵測到 ${profile.fullName} 的歷史配方紀錄：\n\n${profile.latestFormula}\n\n是否要直接帶入此配方？`,
+            onConfirm: () => {
+                handleInputChange('formula', profile.latestFormula);
+                triggerNotification('✅ 已成功帶入舊客資料與配方');
+            }
+        });
     } else {
         triggerNotification(`✅ 已成功帶入舊客資料`);
     }
@@ -400,19 +394,19 @@ export default function App() {
     try {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
         input.onchange = (e) => {
-            const file = (e.target).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            const file = e.target.files?.[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64Data = (event.target.result).split(',')[1];
+                const base64Data = (event.target?.result as string).split(',')[1];
                 if (!driveApiUrl) { setFormData(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
                 try {
-                    // Smart Naming Format: Client ID_first name_service ID
                     const dynamicId = formData.clientType === 'New' || !formData.customerId ? 'NewClient' : formData.customerId;
                     const fName = formData.firstName || 'Unknown';
-                    const filename = `${dynamicId}_${fName}_${formData.serviceId}.jpg`;
+                    const currentServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
+                    const filename = `${dynamicId}_${fName}_${currentServiceId}.jpg`;
                     
                     const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
                     const result = await res.json();
-                    if(result.status === 'success') { setFormData(prev => ({...prev, photoLink: result.url})); triggerNotification('✅ 照片已成功上傳至雲端！'); }
+                    if(result.status === 'success') { setFormData(prev => ({...prev, photoLink: result.url, serviceId: currentServiceId})); triggerNotification('✅ 照片已成功上傳至雲端！'); }
                 } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
             }; reader.readAsDataURL(file);
         }; input.click();
@@ -422,18 +416,59 @@ export default function App() {
   const handleSubmitCheckout = (e) => {
     e.preventDefault(); if (!formData.firstName) return triggerNotification('請輸入顧客姓名！'); if (!formData.price || parseInt(formData.price) <= 0) return triggerNotification('請輸入有效金額！');
     setSubmitting(true);
-    const finalRecord = { ...formData, firstName: formData.firstName.trim(), lastName: '', name: formData.firstName.trim(), customerId: formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(rawHistoryRecords) : formData.customerId, serviceId: formData.serviceId || generateServiceId(), customerSource: formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)'), services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '), interests: formData.interests.join(', '), isProfileOnly: false, timestamp: new Date().toISOString() };
+    
+    const finalServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
+    const finalCustomerId = formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(safeRawRecords) : formData.customerId;
+    const finalSource = formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)');
+
+    // Strictly ordered layout for clean Google Sheets syncing
+    const finalRecord = {
+        serviceId: finalServiceId,
+        date: formData.date,
+        timestamp: new Date().toISOString(),
+        customerId: finalCustomerId,
+        clientType: formData.clientType,
+        customerSource: finalSource,
+        referredBy: formData.referredBy || '',
+        firstName: formData.firstName.trim(),
+        lastName: '',
+        name: formData.firstName.trim(),
+        gender: formData.gender,
+        language: formData.language,
+        phonePrefix: formData.phonePrefix,
+        phone: formData.phone,
+        email: formData.email,
+        birthMonth: formData.birthMonth,
+        stylist: formData.stylist,
+        services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '),
+        subtotal: formData.subtotal,
+        retailItems: formData.retailItems,
+        retailPrice: formData.retailPrice,
+        discountPct: formData.discountPct,
+        price: formData.price,
+        paymentMethod: formData.paymentMethod,
+        formula: formData.formula,
+        interests: formData.interests.join(', '),
+        photoLink: formData.photoLink,
+        edmConsent: formData.edmConsent,
+        isProfileOnly: false
+    };
 
     setTimeout(() => {
-      setRawHistoryRecords(prev => [finalRecord, ...prev]);
+      setRawHistoryRecords(prev => [finalRecord, ...(Array.isArray(prev)?prev:[])]);
       if (driveApiUrl) fetch(getApiUrl(driveApiUrl, 'append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{});
       if (formData._eventId && calendarApiUrl) fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{});
       setSubmitting(false); playAudioFeedback('cashier'); setShowSuccessModal(true); setFormData(getInitialForm());
     }, 400); 
   };
 
-  const exportCSV = (type) => {
-      let data = type === 'customers' ? crmProfiles.map(p => ({ ID: p.customerId, 姓名: p.fullName, 電話: p.phone, 總消費: p.totalSpent, 造訪次數: p.visitCount, 最新造訪: p.latestVisitDate })) : historyRecords.map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
+  const exportCSV = (type, customData = null) => {
+      let data = [];
+      if (customData) {
+          data = customData.map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
+      } else {
+          data = type === 'customers' ? crmProfiles.map(p => ({ ID: p.customerId, 姓名: p.fullName, 電話: p.phone, 總消費: p.totalSpent, 造訪次數: p.visitCount, 最新造訪: p.latestVisitDate })) : historyRecords.map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
+      }
       if (data.length === 0) return triggerNotification('沒有資料可匯出');
       const headers = Object.keys(data[0]); const csv = [headers.join(','), ...data.map(row => headers.map(h => `"${row[h]||''}"`).join(','))].join('\n');
       const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Headline_${type}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
@@ -441,19 +476,12 @@ export default function App() {
 
   const handleCloudRestore = async () => {
       if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
-      try { 
-          triggerNotification('⏳ 正在從雲端下載資料...'); 
-          const res = await fetch(getApiUrl(driveApiUrl, 'get_all')); // No headers to avoid CORS error
-          const result = await res.json(); 
-          if (result.status === 'success' && result.data) { 
-              setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); 
-          } else triggerNotification('❌ 還原失敗'); 
-      } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
+      try { triggerNotification('⏳ 正在從雲端下載資料...'); const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success' && result.data && Array.isArray(result.data)) { setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); } else triggerNotification('❌ 還原失敗'); } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
   };
 
   const handleCloudBackup = async () => {
       if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
-      try { triggerNotification('⏳ 正在上傳資料...'); await fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: rawHistoryRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); triggerNotification('✅ 資料已備份至雲端！'); } catch(e) { triggerNotification('❌ 備份失敗'); }
+      try { triggerNotification('⏳ 正在上傳資料...'); await fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: safeRawRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); triggerNotification('✅ 資料已備份至雲端！'); } catch(e) { triggerNotification('❌ 備份失敗'); }
   };
 
   const MeterChart = ({ title, data, colors }) => {
@@ -475,7 +503,7 @@ export default function App() {
       {/* HEADER SECTION */}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8 w-full justify-between">
-          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v13.8 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
+          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.0 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
           
           <div className="flex items-center gap-4">
             {/* Global Sync Button */}
@@ -628,13 +656,12 @@ export default function App() {
         )}
 
         {/* CHECKOUT TAB */}
-        {}
         {activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
               
-              {/* Dynamic Enlargeable Container for Client Form */}
-              <div className={isProfileExpanded ? "fixed inset-4 md:inset-10 z-[195] bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col transition-all border border-gray-200" : "lg:col-span-5 bg-white border border-gray-200 p-8 shadow-sm relative overflow-hidden rounded-[2.5rem] flex flex-col transition-all"}>
+              {/* Dynamic Enlargeable Container */}
+              <div className={isProfileExpanded ? "fixed inset-4 md:inset-10 z-[200] bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col transition-all border border-gray-200" : "lg:col-span-5 bg-white border border-gray-200 p-8 shadow-sm relative overflow-hidden rounded-[2.5rem] flex flex-col transition-all"}>
                 <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-gray-200 to-gray-100"></div>
                 
                 <div className="flex justify-between items-center mb-6">
@@ -777,7 +804,7 @@ export default function App() {
                         </div>
                         <div className="w-[120px] flex flex-col shrink-0">
                            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Client ID</label>
-                           <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(rawHistoryRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 px-2 text-xl font-bold text-center font-mono outline-none focus:bg-white" />
+                           <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(safeRawRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 px-2 text-xl font-bold text-center font-mono outline-none focus:bg-white" />
                         </div>
                    </div>
 
@@ -841,6 +868,9 @@ export default function App() {
                    <div className="bg-white rounded-3xl p-5 border border-[#E8DCC8] shadow-sm mb-6 flex-1 flex flex-col">
                       <div className="flex justify-between items-center mb-2">
                           <label className="block text-sm font-bold uppercase tracking-wider text-gray-500">化學配方與備註</label>
+                          {currentProfile?.latestFormula && (
+                              <button type="button" onClick={() => { playAudioFeedback('success'); handleInputChange('formula', currentProfile.latestFormula); triggerNotification('✅ 已成功帶入上次配方'); }} className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shadow-sm"><Icons.Refresh /> <span>♻️ 帶入上次配方</span></button>
+                          )}
                       </div>
                       <textarea rows={3} placeholder="例: 8B 70ml + 7MT 30ml + 9%..." value={formData.formula} onChange={(e) => handleInputChange('formula', e.target.value)} className="w-full flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xl font-mono focus:bg-white outline-none focus:border-[#8B5A2B] transition-colors mb-4" />
                       
@@ -862,7 +892,6 @@ export default function App() {
         )}
 
         {/* CRM TAB */}
-        {}
         {activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
@@ -890,7 +919,7 @@ export default function App() {
                   <div key={i} className="border-2 rounded-3xl p-6 transition-all bg-white hover:shadow-xl flex flex-col justify-between group relative" style={{ borderColor: clientTheme.light }}>
                     <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <button onClick={() => setProfileEditData(client)} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-xl transition-colors shadow-sm"><Icons.Edit/></button>
-                        <button onClick={() => setConfirmDialog({ title: '確認刪除檔案', message: `確定要永久刪除客戶 ${client.fullName} 的所有資料與交易紀錄嗎？此操作無法復原。`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.customerId !== client.customerId)); triggerNotification('✅ 客戶檔案已刪除'); } })} className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-colors shadow-sm"><Icons.Trash/></button>
+                        <button onClick={() => setConfirmDialog({ title: '確認刪除檔案', message: `確定要永久刪除客戶 ${client.fullName} 的所有資料與交易紀錄嗎？此操作無法復原。`, onConfirm: () => { setRawHistoryRecords(prev => Array.isArray(prev) ? prev.filter(r => r.customerId !== client.customerId) : []); triggerNotification('✅ 客戶檔案已刪除'); } })} className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-colors shadow-sm"><Icons.Trash/></button>
                     </div>
                     <div>
                       <div className="flex flex-col mb-3 pr-16 relative">
@@ -932,7 +961,7 @@ export default function App() {
 
                               <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover/record:opacity-100 transition-opacity">
                                  <button onClick={() => setEditModal({...v, firstName: client.fullName, customerId: client.customerId})} className="p-1.5 bg-gray-100 hover:text-blue-600 text-gray-500 rounded-lg"><Icons.Edit /></button>
-                                 <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.serviceId !== v.serviceId)); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
+                                 <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => Array.isArray(prev) ? prev.filter(r => r.serviceId !== v.serviceId) : []); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
                               </div>
                             </div>
                           ))}
@@ -947,7 +976,6 @@ export default function App() {
         )}
 
         {/* DASHBOARD TAB */}
-        {}
         {activeTab === 'dashboard' && (
           <div className="max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1085,18 +1113,21 @@ export default function App() {
             <div className="bg-white border border-[#E8DCC8] rounded-3xl shadow-sm overflow-hidden flex flex-col">
                <div className="flex justify-between items-center p-6 bg-[#F6EFE9] border-b border-[#E8DCC8]">
                    <h3 className="text-2xl font-black text-[#4A2511]">交易明細總表 <span className="text-sm font-bold text-gray-500">(可點擊編輯)</span></h3>
-                   <button onClick={() => exportCSV('transactions')} className="bg-white border border-[#E8DCC8] px-4 py-2 rounded-xl text-[#8B5A2B] font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2"><Icons.Download /> 匯出目前明細</button>
+                   <button onClick={() => exportCSV('transactions', dashboardData.records)} className="bg-white border border-[#E8DCC8] px-4 py-2 rounded-xl text-[#8B5A2B] font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2"><Icons.Download /> 匯出目前明細</button>
                </div>
                <div className="w-full">
                   <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-[#F6EFE9]/50 border-b border-[#E8DCC8] text-sm font-black text-gray-500 tracking-wider">
                      <div className="col-span-2">服務日期 / 建立時間</div><div className="col-span-2">交易單號</div><div className="col-span-2">客戶姓名</div><div className="col-span-1 text-center">設計師</div><div className="col-span-3">服務/產品項目</div><div className="col-span-1">支付方式</div><div className="col-span-1 text-right">總額</div>
                   </div>
                   <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-                     {dashboardData.records.length > 0 ? dashboardData.records.sort((a,b)=>new Date(b.timestamp||b.date).getTime() - new Date(a.timestamp||a.date).getTime()).map((r, i) => {
+                     {dashboardData.records.length > 0 ? dashboardData.records.sort((a,b)=>{
+                         const dateA = new Date(a.timestamp||a.date).getTime(); const dateB = new Date(b.timestamp||b.date).getTime();
+                         return (isNaN(dateB)?0:dateB) - (isNaN(dateA)?0:dateA);
+                     }).map((r, i) => {
                          const dateObj = new Date(r.timestamp || r.date); const isDateValid = !isNaN(dateObj.getTime()); const styTheme = STYLIST_THEMES[r.stylist] || STYLIST_THEMES['Others'];
                          return (
                              <div key={i} onClick={() => setEditModal(r)} className="grid grid-cols-12 gap-4 px-6 py-5 border-b border-gray-100 items-center hover:bg-gray-50 cursor-pointer transition-colors group">
-                                 <div className="col-span-2 flex flex-col"><span className="font-black text-[#4A2511] text-base">{isDateValid ? dateObj.toLocaleDateString('en-CA') : r.date}</span><span className="text-xs font-bold text-gray-400 font-mono mt-0.5">{isDateValid && r.timestamp ? `${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}` : ''}</span></div>
+                                 <div className="col-span-2 flex flex-col"><span className="font-black text-[#4A2511] text-base">{parseDateFlexible(r.date)}</span><span className="text-xs font-bold text-gray-400 font-mono mt-0.5">{isDateValid && r.timestamp ? `建立: ${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}` : ''}</span></div>
                                  <div className="col-span-2 font-mono text-gray-400 font-bold text-sm tracking-wide">{r.serviceId}</div>
                                  <div className="col-span-2 flex items-center gap-2 font-black text-[#8B5A2B] text-lg"><Icons.User /> {r.firstName}</div>
                                  <div className="col-span-1 flex justify-center"><span className="text-white text-xs font-bold px-3 py-1 rounded-md" style={{ backgroundColor: styTheme.hex }}>{r.stylist}</span></div>
@@ -1113,7 +1144,6 @@ export default function App() {
         )}
 
         {/* DATAHUB TAB */}
-        {}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
                <div className="bg-white border p-10 rounded-3xl shadow-xl max-w-sm w-full text-center">
@@ -1142,7 +1172,13 @@ export default function App() {
                       <div><label className="block text-sm font-bold text-gray-600 mb-1">Google Calendar Webhook API</label><input type="text" value={calendarApiUrl} onChange={(e) => setCalendarApiUrl(e.target.value)} className="w-full bg-yellow-50 border-yellow-200 border rounded-xl py-3 px-4 text-sm font-mono outline-none text-yellow-900" /></div>
                   </div>
                   <div className="flex gap-4">
-                      <button onClick={() => setConfirmDialog({ title: '強制上傳備份', message: '這將會把目前系統內的所有資料強制覆蓋到 Google Sheet 雲端。確定繼續嗎？', onConfirm: handleCloudBackup })} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-blue-700"><Icons.Upload /> 備份至雲端</button>
+                      <button onClick={() => {
+                          if (safeRawRecords.length === 0) {
+                              setConfirmDialog({ title: '⚠️ 警告', message: '目前系統內為 0 筆紀錄！上傳將會【清空】雲端資料表。確定繼續？', onConfirm: handleCloudBackup });
+                          } else {
+                              setConfirmDialog({ title: '強制上傳備份', message: '這將會把目前系統內的所有資料強制覆蓋到 Google Sheet 雲端。確定繼續嗎？', onConfirm: handleCloudBackup });
+                          }
+                      }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-blue-700"><Icons.Upload /> 備份至雲端</button>
                       <button onClick={() => setConfirmDialog({ title: '強制雲端還原', message: '這將會清除目前系統的資料，並從 Google Sheet 雲端下載覆蓋。確定繼續嗎？', onConfirm: handleCloudRestore })} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-emerald-700"><Icons.Download /> 從雲端庫還原</button>
                   </div>
                 </div>
@@ -1152,19 +1188,55 @@ export default function App() {
                       <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4">本地檔案匯出與還原</h3>
                       <div className="grid grid-cols-2 gap-4 mb-6">
                          <button onClick={() => exportCSV('customers')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出客戶 CSV</button>
-                         <button onClick={() => exportCSV('transactions')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出交易 CSV</button>
+                         <button onClick={() => exportCSV('transactions', dashboardData.records)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出交易 CSV</button>
                       </div>
                       <div className="flex gap-4">
                           <button onClick={() => {
-                             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawHistoryRecords));
+                             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(safeRawRecords));
                              const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", `Headline_Backup_${new Date().toISOString().split('T')[0]}.json`); dlAnchorElem.click(); triggerNotification('✅ JSON 備份已下載');
                           }} className="flex-1 border-2 border-[#8B5A2B] text-[#8B5A2B] font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#F6EFE9]"><Icons.Download /> 匯出 JSON</button>
                           
                           <label className="flex-1 border-2 border-[#8B5A2B] bg-[#8B5A2B] text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#6D3A14] cursor-pointer">
                               <Icons.Upload /> 匯入 JSON
-                              <input type="file" accept=".json" className="hidden" onChange={(e) => {
-                                  const file = (e.target as any).files[0]; if (!file) return; const reader = new FileReader();
-                                  reader.onload = (event) => { setConfirmDialog({ title: '確認還原 JSON', message: '這將覆蓋目前的系統資料。確定繼續嗎？', onConfirm: () => { try { setRawHistoryRecords(JSON.parse(event.target.result as string)); triggerNotification('✅ JSON 資料還原成功'); } catch(err) { triggerNotification('❌ 檔案格式錯誤'); } } }); }; reader.readAsText(file); e.target.value = '';
+                              <input type="file" accept=".json,.txt" className="hidden" onChange={(e) => {
+                                  const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader();
+                                  reader.onload = (event) => { 
+                                      setConfirmDialog({ 
+                                          title: '確認還原 JSON', 
+                                          message: '這將覆蓋目前的系統資料。確定繼續嗎？', 
+                                          onConfirm: () => { 
+                                              try { 
+                                                  let rawString = String(event.target?.result || '').trim();
+                                                  // Clean potential invisible characters and smart quotes
+                                                  rawString = rawString.replace(/^\uFEFF/, '').replace(/[\u201C\u201D]/g, '"');
+                                                  
+                                                  if (rawString.startsWith('<')) throw new Error('HTML_FILE');
+                                                  
+                                                  let parsed = JSON.parse(rawString); 
+                                                  let finalData = [];
+                                                  if (Array.isArray(parsed)) finalData = parsed;
+                                                  else if (parsed && Array.isArray(parsed.data)) finalData = parsed.data;
+                                                  else if (parsed && Array.isArray(parsed.records)) finalData = parsed.records;
+                                                  else if (parsed && typeof parsed === 'object') {
+                                                      const arrayProps = Object.values(parsed).filter(v => Array.isArray(v as any));
+                                                      if (arrayProps.length > 0) finalData = arrayProps.sort((a: any, b: any) => b.length - a.length)[0] as any;
+                                                  }
+                                                  
+                                                  if(!Array.isArray(finalData) || finalData.length === 0) throw new Error('NO_DATA');
+                                                  
+                                                  setRawHistoryRecords(finalData); 
+                                                  triggerNotification(`✅ JSON 還原成功 (${finalData.length} 筆紀錄)`); 
+                                              } catch(err: any) { 
+                                                  console.error(err);
+                                                  if (err.message === 'HTML_FILE') triggerNotification('❌ 格式錯誤：這似乎是一個網頁檔(HTML)而不是資料檔');
+                                                  else if (err.message === 'NO_DATA') triggerNotification('❌ 錯誤：檔案內找不到陣列資料');
+                                                  else triggerNotification('❌ 檔案已損毀或格式不支援 (JSON Parse Error)'); 
+                                              } 
+                                          } 
+                                      }); 
+                                  }; 
+                                  reader.readAsText(file); 
+                                  e.target.value = '';
                               }} />
                           </label>
                       </div>
@@ -1178,7 +1250,6 @@ export default function App() {
         )}
       </main>
 
-      {}
       {/* CONFIRM DIALOG MODAL */}
       {confirmDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
@@ -1206,24 +1277,6 @@ export default function App() {
             </div>
             <button onClick={() => { playAudioFeedback('click'); setShowSuccessModal(false); }} className="mt-2 w-full text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg hover:scale-105" style={{ backgroundColor: activeTheme.hex }}>完成 (Done)</button>
           </div>
-        </div>
-      )}
-
-      {/* SMART FORMULA POPUP MODAL */}
-      {confirmFormulaModal && (
-        <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
-             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 text-center">
-                 <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4"><Icons.Refresh className="w-8 h-8" /></div>
-                 <h3 className="text-2xl font-black mb-2 text-gray-800">載入歷史配方？</h3>
-                 <p className="text-gray-500 font-bold text-sm mb-4">系統發現 <span className="text-[#8B5A2B]">{confirmFormulaModal.name}</span> 有歷史化學配方：</p>
-                 <div className="bg-gray-50 p-4 rounded-xl text-left font-mono text-sm text-gray-700 mb-6 border border-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
-                    {confirmFormulaModal.formula}
-                 </div>
-                 <div className="flex gap-3">
-                    <button onClick={() => { setConfirmFormulaModal(null); }} className="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">取消 (維持空白)</button>
-                    <button onClick={() => { handleInputChange('formula', confirmFormulaModal.formula); setConfirmFormulaModal(null); playAudioFeedback('success'); }} className="flex-1 py-3 rounded-xl font-black bg-blue-500 text-white shadow-md hover:bg-blue-600 transition-colors">✅ 確認載入</button>
-                 </div>
-             </div>
         </div>
       )}
 
@@ -1302,6 +1355,7 @@ export default function App() {
         </div>
       )}
 
+      {/* TAGS CONFIG MODAL */}
       {showTagsConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
@@ -1317,6 +1371,7 @@ export default function App() {
         </div>
       )}
 
+      {/* SERVICES CONFIG MODAL */}
       {showServicesConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
@@ -1338,7 +1393,8 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault(); const updatedRecord = { ...editModal };
             setRawHistoryRecords(prev => {
-                const newRecords = prev.map(r => r.serviceId === updatedRecord.serviceId ? { ...r, ...updatedRecord } : r);
+                const safePrev = Array.isArray(prev) ? prev : [];
+                const newRecords = safePrev.map(r => r.serviceId === updatedRecord.serviceId ? { ...r, ...updatedRecord } : r);
                 if (driveApiUrl) { fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: newRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{}); }
                 return newRecords;
             });
@@ -1363,7 +1419,8 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault(); const newFullName = (e.target as any).fullName.value.trim();
             setRawHistoryRecords(prev => {
-                const newRecords = prev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: (e.target as any).gender.value, language: (e.target as any).language.value, phone: (e.target as any).phone.value, interests: profileEditData.interests.join(', ') } : r);
+                const safePrev = Array.isArray(prev) ? prev : [];
+                const newRecords = safePrev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: (e.target as any).gender.value, language: (e.target as any).language.value, phone: (e.target as any).phone.value, interests: profileEditData.interests.join(', ') } : r);
                 if (driveApiUrl) { fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: newRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{}); }
                 return newRecords;
             });
