@@ -28,6 +28,8 @@ const Icons = {
   ChevronRight: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
   Maximize: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>,
   Minimize: ({ className = "w-5 h-5" }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7m-7 17v-6m0 0h6m-6 0l7 7M10 4v6m0 0H4m6 0L3 3" /></svg>,
+  List: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>,
+  Grid: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
 };
 
 const STYLIST_THEMES = { 'Man': { hex: '#6D3A14', light: '#6D3A1415', shadow: 'rgba(109, 58, 20, 0.3)' }, 'Becky': { hex: '#9F3E3E', light: '#9F3E3E15', shadow: 'rgba(159, 62, 62, 0.3)' }, 'Sammy': { hex: '#2C496A', light: '#2C496A15', shadow: 'rgba(44, 73, 106, 0.3)' }, 'Others': { hex: '#595959', light: '#59595915', shadow: 'rgba(89, 89, 89, 0.3)' } };
@@ -73,6 +75,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('checkout'); 
   const [crmSortBy, setCrmSortBy] = useState('latestVisit'); 
   const [crmSearchQuery, setCrmSearchQuery] = useState(''); 
+  const [crmViewMode, setCrmViewMode] = useState('grid');
   const [expandedHistory, setExpandedHistory] = useState({});
   const [notification, setNotification] = useState(null);
   const [dataHubUnlocked, setDataHubUnlocked] = useState(false);
@@ -84,8 +87,11 @@ export default function App() {
   const [showServicesConfig, setShowServicesConfig] = useState(false);
   const [showTagsConfig, setShowTagsConfig] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
+  
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showNameSuggest, setShowNameSuggest] = useState(false);
+  const [nameSuggests, setNameSuggests] = useState([]);
 
-  // APIs Embedded as Default Values
   const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13_9') || 'https://script.google.com/macros/s/AKfycbxCv4qRXnzrAimYoRfI1fwJLqM4P9NfyAAumRalugmgUhTs0eKEop3Z712JKET8rIgbKQ/exec');
   const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13_9') || 'https://script.google.com/macros/s/AKfycbwcxZHp2p19GyIew9o0WRz9w8hIMSDu1qJIoJgStMX6tKez7PIK2dGohoPvrl7WVwj9qw/exec');
   
@@ -110,11 +116,28 @@ export default function App() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { 
+    try { 
+      const parsed = JSON.parse(localStorage.getItem('headline_salon_history_v11') || '[]'); 
+      return Array.isArray(parsed) ? parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` })) : []; 
+    } catch(e) { return []; } 
+  });
+  
+  const safeRawRecords = useMemo(() => rawHistoryRecords, [rawHistoryRecords]);
+  const historyRecords = useMemo(() => { return rawHistoryRecords.map(r => ({...r, stylist: r.stylist ? String(r.stylist).trim() : 'Unknown', price: Number(String(r.price).replace(/[^0-9.-]+/g, "")) || 0})); }, [rawHistoryRecords]);
+
+  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', serviceId: '', _eventId: null, _stylist: null });
+
+  const [formData, setFormData] = useState(getInitialForm());
+  const [submitting, setSubmitting] = useState(false);
+  const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
+
   useEffect(() => { const interval = setInterval(() => setCurrentTime(new Date()), 60000); return () => clearInterval(interval); }, []);
   useEffect(() => { localStorage.setItem('headline_services_v11', JSON.stringify(hairServices)); }, [hairServices]);
   useEffect(() => { localStorage.setItem('headline_tags_v1', JSON.stringify(interestTags)); }, [interestTags]);
   useEffect(() => { localStorage.setItem('headline_drive_api_v13_9', driveApiUrl); }, [driveApiUrl]);
   useEffect(() => { localStorage.setItem('headline_calendar_api_v13_9', calendarApiUrl); }, [calendarApiUrl]);
+  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(rawHistoryRecords)); }, [rawHistoryRecords]);
 
   const getApiUrl = (baseUrl, action) => { if (!baseUrl) return ''; try { const url = new URL(baseUrl); url.searchParams.set('action', action); return url.toString(); } catch (e) { return `${baseUrl}?action=${action}`; } };
 
@@ -129,7 +152,7 @@ export default function App() {
     try {
       const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
       const result = await res.json();
-      if (result.status === 'success' && result.data && Array.isArray(result.data)) {
+      if (result.status === 'success' && result.data) {
         setRawHistoryRecords(result.data);
       }
       if (calendarApiUrl) {
@@ -153,36 +176,10 @@ export default function App() {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    const prefix = `S${yy}${mm}${dd}-`;
+    const prefix = `S-${yy}${mm}${dd}-`;
     const todaysRecords = records.filter(r => r.serviceId && r.serviceId.startsWith(prefix));
     return `${prefix}${String(todaysRecords.length + 1).padStart(2, '0')}`;
   };
-
-  const getInitialForm = () => ({ customerId: '', clientType: 'New', sourceDetail: 'Walk-in', referredBy: '', language: '中文', stylist: 'Man', firstName: '', lastName: '', gender: 'Female', phonePrefix: '+852', phone: '', email: '', edmConsent: '', birthMonth: '', customerSource: '熟客 (Regular)', date: new Date().toISOString().split('T')[0], selectedServices: [], customService: '', retailItems: '', retailPrice: '', subtotal: '', discountPct: '0', price: '', paymentMethod: 'Cash', formula: '', interests: [], photoLink: '', serviceId: '', _eventId: null, _stylist: null });
-
-  const [formData, setFormData] = useState(getInitialForm());
-  const [submitting, setSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showNameSuggest, setShowNameSuggest] = useState(false);
-  const [nameSuggests, setNameSuggests] = useState([]);
-  
-  // CRASH PROTECTION: Guarantee rawHistoryRecords is an Array.
-  const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { 
-      try { 
-          const parsed = JSON.parse(localStorage.getItem('headline_salon_history_v11') || '[]'); 
-          return Array.isArray(parsed) ? parsed.map((r, i) => ({ ...r, serviceId: r.serviceId || `S-OLD-${Date.now()}-${i}` })) : []; 
-      } catch(e) { return []; } 
-  });
-  
-  const safeRawRecords = Array.isArray(rawHistoryRecords) ? rawHistoryRecords : [];
-
-  const historyRecords = useMemo(() => { 
-      return safeRawRecords.map(r => ({...r, stylist: r.stylist ? String(r.stylist).trim() : 'Unknown', price: Number(String(r.price).replace(/[^0-9.-]+/g, "")) || 0})); 
-  }, [safeRawRecords]);
-  
-  const activeTheme = STYLIST_THEMES[formData.stylist] || STYLIST_THEMES['Man'];
-  
-  useEffect(() => { localStorage.setItem('headline_salon_history_v11', JSON.stringify(safeRawRecords)); }, [safeRawRecords]);
 
   const triggerNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
   const handleTabChange = (tab) => { playAudioFeedback('click'); setActiveTab(tab); if(tab !== 'datahub') setDataHubUnlocked(false); setIsProfileExpanded(false); };
@@ -288,7 +285,6 @@ export default function App() {
         let globalReferralMap = {}; 
         let refTotal = 0, refRev = 0;
         
-        // Calculate Top Referrers across ALL history to ensure the leaderboard is always populated
         historyRecords.forEach(r => {
             if (r.customerSource?.includes('Referral') || r.customerSource?.includes('朋友介紹') || (r.referredBy && r.referredBy.trim() !== '')) {
                 refTotal++; refRev += r.price;
@@ -334,8 +330,16 @@ export default function App() {
     const prev = prevRange ? getMetrics(prevRange.start, prevRange.end) : null;
     const calcChange = (c, p) => p ? (((c - p) / Math.abs(p)) * 100).toFixed(1) : (c > 0 ? 100 : 0);
     
+    // Add prev comparison to stylist chart
+    const stylistChartWithChanges = curr.stylistChart.map(sty => {
+        const prevSty = prev ? prev.stylistChart.find(p => p.name === sty.name) : null;
+        const prevRev = prevSty ? prevSty.revenue : 0;
+        const changePct = prev ? (prevRev ? (((sty.revenue - prevRev) / prevRev) * 100).toFixed(1) : (sty.revenue > 0 ? 100 : 0)) : null;
+        return { ...sty, prevRevenue: prevRev, changePct };
+    });
+    
     return {
-        ...curr, start: currentRange.start, end: currentRange.end,
+        ...curr, start: currentRange.start, end: currentRange.end, stylistChart: stylistChartWithChanges,
         changes: prev ? { rev: calcChange(curr.rev, prev.rev), clients: calcChange(curr.clients, prev.clients), avg: calcChange(curr.clients?curr.rev/curr.clients:0, prev.clients?prev.rev/prev.clients:0), newCus: calcChange(curr.newCus, prev.newCus) } : null,
         avgSpending: curr.clients ? (curr.rev / curr.clients).toFixed(0) : 0,
         retailPct: curr.rev ? ((curr.retail / curr.rev) * 100).toFixed(1) : 0,
@@ -375,7 +379,6 @@ export default function App() {
     setFormData(prev => ({ ...prev, customerId: profile.customerId, clientType: 'Repeated', firstName: profile.fullName || '', lastName: '', gender: profile.gender || 'Female', language: profile.language || '中文', phone: profile.phone || '', email: profile.email || '', edmConsent: profile.edmConsent || '', birthMonth: profile.birthMonth || '', customerSource: '舊客 (Repeated)', interests: profile.interests || [], formula: '' }));
     setShowNameSuggest(false);
     
-    // Smart Formula Retrieval Popup
     if (profile.latestFormula) {
         setConfirmDialog({
             title: '載入歷史配方 (Load History Formula)',
@@ -392,11 +395,11 @@ export default function App() {
 
   const capturePhoto = async () => {
     try {
-        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; 
         input.onchange = (e) => {
-            const file = e.target.files?.[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            const file = (e.target as any).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64Data = (event.target?.result as string).split(',')[1];
+                const base64Data = (event.target.result as string).split(',')[1];
                 if (!driveApiUrl) { setFormData(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
                 try {
                     const dynamicId = formData.clientType === 'New' || !formData.customerId ? 'NewClient' : formData.customerId;
@@ -410,78 +413,48 @@ export default function App() {
                 } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
             }; reader.readAsDataURL(file);
         }; input.click();
-    } catch(e) { triggerNotification('❌ 無法啟動相機'); }
+    } catch(e) { triggerNotification('❌ 無法啟動相簿/相機'); }
+  };
+
+  const capturePhotoForEdit = async () => {
+    try {
+        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = (e.target as any).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            reader.onload = async (event) => {
+                const base64Data = (event.target.result as string).split(',')[1];
+                if (!driveApiUrl) { setEditModal(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
+                try {
+                    const filename = `${editModal.customerId}_${editModal.firstName}_${editModal.serviceId}_update.jpg`;
+                    const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    const result = await res.json();
+                    if(result.status === 'success') { setEditModal(prev => ({...prev, photoLink: result.url})); triggerNotification('✅ 照片已更新！'); }
+                } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
+            }; reader.readAsDataURL(file);
+        }; input.click();
+    } catch(e) { triggerNotification('❌ 無法選擇照片'); }
   };
 
   const handleSubmitCheckout = (e) => {
     e.preventDefault(); if (!formData.firstName) return triggerNotification('請輸入顧客姓名！'); if (!formData.price || parseInt(formData.price) <= 0) return triggerNotification('請輸入有效金額！');
     setSubmitting(true);
+    const currentServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
     
-    const finalServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
-    const finalCustomerId = formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(safeRawRecords) : formData.customerId;
-    const finalSource = formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)');
-
-    // Strictly ordered layout for clean Google Sheets syncing
-    const finalRecord = {
-        serviceId: finalServiceId,
-        date: formData.date,
-        timestamp: new Date().toISOString(),
-        customerId: finalCustomerId,
-        clientType: formData.clientType,
-        customerSource: finalSource,
-        referredBy: formData.referredBy || '',
-        firstName: formData.firstName.trim(),
-        lastName: '',
-        name: formData.firstName.trim(),
-        gender: formData.gender,
-        language: formData.language,
-        phonePrefix: formData.phonePrefix,
-        phone: formData.phone,
-        email: formData.email,
-        birthMonth: formData.birthMonth,
-        stylist: formData.stylist,
-        services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '),
-        subtotal: formData.subtotal,
-        retailItems: formData.retailItems,
-        retailPrice: formData.retailPrice,
-        discountPct: formData.discountPct,
-        price: formData.price,
-        paymentMethod: formData.paymentMethod,
-        formula: formData.formula,
-        interests: formData.interests.join(', '),
-        photoLink: formData.photoLink,
-        edmConsent: formData.edmConsent,
-        isProfileOnly: false
-    };
+    const finalRecord = { ...formData, firstName: formData.firstName.trim(), lastName: '', name: formData.firstName.trim(), customerId: formData.clientType === 'New' || !formData.customerId ? getNextCustomerId(rawHistoryRecords) : formData.customerId, serviceId: currentServiceId, customerSource: formData.clientType === 'New' ? `新客 (${formData.sourceDetail})` : (formData.clientType === 'Repeated' && !formData.customerId ? '舊客 (數位首建)' : '舊客 (Repeated)'), services: [...formData.selectedServices, formData.customService].filter(Boolean).join(', '), interests: formData.interests.join(', '), isProfileOnly: false, timestamp: new Date().toISOString() };
 
     setTimeout(() => {
-      setRawHistoryRecords(prev => [finalRecord, ...(Array.isArray(prev)?prev:[])]);
+      setRawHistoryRecords(prev => [finalRecord, ...prev]);
       if (driveApiUrl) fetch(getApiUrl(driveApiUrl, 'append'), { method: 'POST', body: JSON.stringify({ action: 'append', record: finalRecord }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{});
       if (formData._eventId && calendarApiUrl) fetch(getApiUrl(calendarApiUrl, 'delete_event'), { method: 'POST', body: JSON.stringify({ action: 'delete_event', eventId: formData._eventId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{});
       setSubmitting(false); playAudioFeedback('cashier'); setShowSuccessModal(true); setFormData(getInitialForm());
     }, 400); 
   };
 
-  const exportCSV = (type, customData = null) => {
-      let data = [];
-      if (customData) {
-          data = customData.map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
-      } else {
-          data = type === 'customers' ? crmProfiles.map(p => ({ ID: p.customerId, 姓名: p.fullName, 電話: p.phone, 總消費: p.totalSpent, 造訪次數: p.visitCount, 最新造訪: p.latestVisitDate })) : historyRecords.map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
-      }
+  const exportCSV = (type, customRecords = null) => {
+      let data = type === 'customers' ? crmProfiles.map(p => ({ ID: p.customerId, 姓名: p.fullName, 電話: p.phone, 總消費: p.totalSpent, 造訪次數: p.visitCount, 最新造訪: p.latestVisitDate })) : (customRecords || historyRecords).map(r => ({ 單號: r.serviceId, 日期: r.date, 姓名: r.firstName, 設計師: r.stylist, 服務: r.services, 金額: r.price }));
       if (data.length === 0) return triggerNotification('沒有資料可匯出');
       const headers = Object.keys(data[0]); const csv = [headers.join(','), ...data.map(row => headers.map(h => `"${row[h]||''}"`).join(','))].join('\n');
       const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Headline_${type}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
-  };
-
-  const handleCloudRestore = async () => {
-      if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
-      try { triggerNotification('⏳ 正在從雲端下載資料...'); const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success' && result.data && Array.isArray(result.data)) { setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); } else triggerNotification('❌ 還原失敗'); } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
-  };
-
-  const handleCloudBackup = async () => {
-      if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
-      try { triggerNotification('⏳ 正在上傳資料...'); await fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: safeRawRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); triggerNotification('✅ 資料已備份至雲端！'); } catch(e) { triggerNotification('❌ 備份失敗'); }
   };
 
   const MeterChart = ({ title, data, colors }) => {
@@ -503,7 +476,7 @@ export default function App() {
       {/* HEADER SECTION */}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8 w-full justify-between">
-          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.0 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
+          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.2 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
           
           <div className="flex items-center gap-4">
             {/* Global Sync Button */}
@@ -520,6 +493,7 @@ export default function App() {
         </div>
       </header>
 
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative">
         
         {/* SCHEDULER TAB */}
@@ -655,7 +629,6 @@ export default function App() {
           </div>
         )}
 
-        {/* CHECKOUT TAB */}
         {activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
@@ -729,7 +702,7 @@ export default function App() {
                   {/* Conditionally hidden tags section when expanded */}
                   {!isProfileExpanded && (
                      <div className="border-t border-gray-100 pt-6 mt-6">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex justify-between items-center"><span>客人興趣 / 需求標籤 (Optional)</span><button type="button" onClick={()=>setShowTagsConfig(true)} className="text-blue-500 hover:text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">管理標籤</button></h3>
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex justify-between items-center"><span>客人標籤 Customer Tag (Optional)</span><button type="button" onClick={()=>setShowTagsConfig(true)} className="text-blue-500 hover:text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">管理標籤</button></h3>
                         <div className="flex flex-wrap gap-3 mb-6">
                            {interestTags.map(interest => (
                                <button type="button" key={interest} onClick={() => toggleArrayItem('interests', interest)} className={`px-5 py-2.5 rounded-xl text-base font-bold transition-all shadow-sm border-2 ${formData.interests.includes(interest) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{interest}</button>
@@ -804,7 +777,7 @@ export default function App() {
                         </div>
                         <div className="w-[120px] flex flex-col shrink-0">
                            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Client ID</label>
-                           <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(safeRawRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 px-2 text-xl font-bold text-center font-mono outline-none focus:bg-white" />
+                           <input type="text" value={formData.clientType === 'New' ? getNextCustomerId(rawHistoryRecords) : formData.customerId} readOnly={formData.clientType === 'New'} onChange={(e) => handleInputChange('customerId', e.target.value.toUpperCase())} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 px-2 text-xl font-bold text-center font-mono outline-none focus:bg-white" />
                         </div>
                    </div>
 
@@ -891,7 +864,6 @@ export default function App() {
           </form>
         )}
 
-        {/* CRM TAB */}
         {activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
@@ -903,79 +875,166 @@ export default function App() {
                     <input type="text" placeholder="🔍 搜尋電話、姓名、關鍵字..." value={crmSearchQuery} onChange={(e) => setCrmSearchQuery(e.target.value)} className="w-full bg-[#F6EFE9] border border-[#E8DCC8] rounded-2xl py-3 px-4 pr-10 text-lg font-bold outline-none focus:bg-white focus:border-[#8B5A2B] transition-colors" />
                     {crmSearchQuery && <button type="button" onClick={() => setCrmSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:bg-gray-200 rounded-full transition-colors"><Icons.X className="w-4 h-4" /></button>}
                   </div>
+                  
                   <div className="flex items-center space-x-3 bg-[#F6EFE9] rounded-2xl p-2.5 px-4 border border-[#E8DCC8]">
                     <span className="text-sm font-bold text-gray-500 uppercase">Sort:</span>
                     <select value={crmSortBy} onChange={(e) => setCrmSortBy(e.target.value)} className="bg-transparent text-lg font-bold focus:outline-none text-[#4A2511] cursor-pointer">
                       <option value="latestVisit">最新到店</option><option value="name_asc">姓名 (A-Z)</option><option value="stylist">設計師</option><option value="totalSpent">消費總額</option>
                     </select>
                   </div>
+                  
+                  <div className="flex items-center bg-[#F6EFE9] rounded-2xl p-1 border border-[#E8DCC8]">
+                    <button onClick={() => setCrmViewMode('grid')} className={`px-4 py-2 rounded-xl flex items-center transition-all ${crmViewMode === 'grid' ? 'bg-white shadow-sm text-[#4A2511]' : 'text-gray-400 hover:text-gray-600'}`}><Icons.Grid /></button>
+                    <button onClick={() => setCrmViewMode('list')} className={`px-4 py-2 rounded-xl flex items-center transition-all ${crmViewMode === 'list' ? 'bg-white shadow-sm text-[#4A2511]' : 'text-gray-400 hover:text-gray-600'}`}><Icons.List /></button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {crmProfiles.filter(p => !crmSearchQuery || String(p.fullName).toLowerCase().includes(crmSearchQuery.toLowerCase()) || String(p.phone).includes(crmSearchQuery) || (p.interests && p.interests.some(t => t.toLowerCase().includes(crmSearchQuery.toLowerCase()))) || (p.tags && p.tags.some(t => t.label.toLowerCase().includes(crmSearchQuery.toLowerCase())))).map((client, i) => {
-                  const isExpanded = expandedHistory[client.customerId]; const clientTheme = STYLIST_THEMES[client.preferredStylist] || STYLIST_THEMES['Others'];
-                  return (
-                  <div key={i} className="border-2 rounded-3xl p-6 transition-all bg-white hover:shadow-xl flex flex-col justify-between group relative" style={{ borderColor: clientTheme.light }}>
-                    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button onClick={() => setProfileEditData(client)} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-xl transition-colors shadow-sm"><Icons.Edit/></button>
-                        <button onClick={() => setConfirmDialog({ title: '確認刪除檔案', message: `確定要永久刪除客戶 ${client.fullName} 的所有資料與交易紀錄嗎？此操作無法復原。`, onConfirm: () => { setRawHistoryRecords(prev => Array.isArray(prev) ? prev.filter(r => r.customerId !== client.customerId) : []); triggerNotification('✅ 客戶檔案已刪除'); } })} className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-colors shadow-sm"><Icons.Trash/></button>
-                    </div>
-                    <div>
-                      <div className="flex flex-col mb-3 pr-16 relative">
-                          <div className="flex items-center space-x-3 mb-2"><span className="text-2xl font-black text-[#4A2511] truncate">{client.fullName}</span><span className="bg-[#F6EFE9] text-[#8B5A2B] text-xs px-2.5 py-1 rounded-md font-mono font-bold shrink-0 border border-[#E8DCC8]">{client.customerId}</span></div>
-                          <div className="flex flex-wrap gap-1.5 mb-4">
-                              {client.tags.map((t, idx) => <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.color}`}>{t.label}</span>)}
-                              {client.interests && client.interests.map((t, idx) => <span key={`int-${idx}`} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{t}</span>)}
-                          </div>
-                          <div className="flex items-center gap-4 mb-4">
-                             <span className="text-xl font-black text-white px-3 py-1 rounded shadow-sm" style={{ backgroundColor: clientTheme.hex }}>{client.preferredStylist}</span>
-                             <div className="text-xl font-black text-gray-500 flex items-center space-x-2"><span className={client.gender === 'Male' ? 'text-blue-600' : 'text-pink-600'}>{client.gender === 'Male' ? '男' : '女'}</span>{client.birthMonth && <span className="text-base">🎂 {client.birthMonth}</span>}</div>
-                          </div>
-                          <div className="text-sm font-bold text-gray-500 flex items-center flex-wrap gap-2">
-                              {client.phone && <div className="flex items-center gap-1"><span>📞 {client.phone}</span><a href={getWaLink(client.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 ml-1"><Icons.MessageCircle /></a></div>}
-                              <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{client.language}</span>
-                          </div>
+              {crmViewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {crmProfiles.filter(p => !crmSearchQuery || String(p.fullName).toLowerCase().includes(crmSearchQuery.toLowerCase()) || String(p.phone).includes(crmSearchQuery) || (p.interests && p.interests.some(t => t.toLowerCase().includes(crmSearchQuery.toLowerCase()))) || (p.tags && p.tags.some(t => t.label.toLowerCase().includes(crmSearchQuery.toLowerCase())))).map((client, i) => {
+                    const isExpanded = expandedHistory[client.customerId]; const clientTheme = STYLIST_THEMES[client.preferredStylist] || STYLIST_THEMES['Others'];
+                    return (
+                    <div key={i} className="border-2 rounded-3xl p-6 transition-all bg-white hover:shadow-xl flex flex-col justify-between group relative" style={{ borderColor: clientTheme.light }}>
+                      <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button onClick={() => setProfileEditData(client)} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-xl transition-colors shadow-sm"><Icons.Edit/></button>
+                          <button onClick={() => setConfirmDialog({ title: '確認刪除檔案', message: `確定要永久刪除客戶 ${client.fullName} 的所有資料與交易紀錄嗎？此操作無法復原。`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.customerId !== client.customerId)); triggerNotification('✅ 客戶檔案已刪除'); } })} className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-colors shadow-sm"><Icons.Trash/></button>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-lg bg-[#F6EFE9]/50 p-5 rounded-2xl mb-4 border border-[#E8DCC8]">
-                        <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent.toLocaleString()}</span></div>
-                        <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">最近造訪</span><span className="font-black text-[#4A2511] text-base">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : <>{client.latestVisitDate} <span className="text-xs font-bold text-gray-400 ml-1">({client.daysSince} 天前)</span></>}</span></div>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <button onClick={() => setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]}))} className="w-full py-3 flex items-center justify-center space-x-2 text-lg font-bold rounded-xl transition-colors hover:bg-gray-100" style={{ color: clientTheme.hex, backgroundColor: clientTheme.light }}><Icons.History /> <span>{isExpanded ? '隱藏紀錄' : `展開完整紀錄 (${client.visitCount} 次)`}</span></button>
-                      {isExpanded && (
-                        <div className="mt-4 space-y-3 animate-in slide-in-from-top-2 max-h-[450px] overflow-y-auto custom-scrollbar pr-2">
-                          {client.visits.map((v, vIdx) => (
-                            <div key={vIdx} className="bg-white border-2 p-3 rounded-2xl shadow-sm relative group/record flex flex-col" style={{ borderColor: clientTheme.light }}>
-                              <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12"><div className="flex items-center gap-2"><span>{parseDateFlexible(v.date)}</span></div><span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span></div>
-                              <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
-                              {v.formula && <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 break-words whitespace-pre-wrap">{v.formula}</p>}
-                              
-                              {/* Visible View Photo Link (查看照片) */}
-                              {v.photoLink && v.photoLink !== 'Local Image Bound' && (
-                                <a href={v.photoLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-100 transition-colors shadow-sm self-start">
-                                  <Icons.Photo className="w-4 h-4" /> <span>查看照片 (View Photo)</span>
-                                </a>
-                              )}
-
-                              <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover/record:opacity-100 transition-opacity">
-                                 <button onClick={() => setEditModal({...v, firstName: client.fullName, customerId: client.customerId})} className="p-1.5 bg-gray-100 hover:text-blue-600 text-gray-500 rounded-lg"><Icons.Edit /></button>
-                                 <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => Array.isArray(prev) ? prev.filter(r => r.serviceId !== v.serviceId) : []); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
-                              </div>
+                      <div>
+                        <div className="flex flex-col mb-3 pr-16 relative">
+                            <div className="flex items-center space-x-3 mb-2"><span className="text-2xl font-black text-[#4A2511] truncate">{client.fullName}</span><span className="bg-[#F6EFE9] text-[#8B5A2B] text-xs px-2.5 py-1 rounded-md font-mono font-bold shrink-0 border border-[#E8DCC8]">{client.customerId}</span></div>
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                {client.tags.map((t, idx) => <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.color}`}>{t.label}</span>)}
+                                {client.interests && client.interests.map((t, idx) => <span key={`int-${idx}`} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{t}</span>)}
                             </div>
-                          ))}
+                            <div className="flex items-center gap-4 mb-4">
+                               <span className="text-xl font-black text-white px-3 py-1 rounded shadow-sm" style={{ backgroundColor: clientTheme.hex }}>{client.preferredStylist}</span>
+                               <div className="text-xl font-black text-gray-500 flex items-center space-x-2"><span className={client.gender === 'Male' ? 'text-blue-600' : 'text-pink-600'}>{client.gender === 'Male' ? '👨 男' : '👩 女'}</span>{client.birthMonth && <span className="text-base">🎂 {client.birthMonth}</span>}</div>
+                            </div>
+                            <div className="text-sm font-bold text-gray-500 flex items-center flex-wrap gap-2">
+                                {client.phone && <div className="flex items-center gap-1"><span>📞 {client.phone}</span><a href={getWaLink(client.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 ml-1"><Icons.MessageCircle /></a></div>}
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{client.language}</span>
+                            </div>
                         </div>
-                      )}
+                        <div className="grid grid-cols-2 gap-4 text-lg bg-[#F6EFE9]/50 p-5 rounded-2xl mb-4 border border-[#E8DCC8]">
+                          <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">LTV (總消費)</span><span className="font-black text-[#4A2511] text-2xl">${client.totalSpent.toLocaleString()}</span></div>
+                          <div><span className="text-sm text-gray-500 uppercase font-bold block mb-1">最近造訪</span><span className="font-black text-[#4A2511] text-base">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : <>{client.latestVisitDate} <span className="text-xs font-bold text-gray-400 ml-1">({client.daysSince} 天前)</span></>}</span></div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <button onClick={() => setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]}))} className="w-full py-3 flex items-center justify-center space-x-2 text-lg font-bold rounded-xl transition-colors hover:bg-gray-100" style={{ color: clientTheme.hex, backgroundColor: clientTheme.light }}><Icons.History /> <span>{isExpanded ? '隱藏紀錄' : `展開完整紀錄 (${client.visitCount} 次)`}</span></button>
+                        {isExpanded && (
+                          <div className="mt-4 space-y-3 animate-in slide-in-from-top-2 max-h-[450px] overflow-y-auto custom-scrollbar pr-2">
+                            {client.visits.map((v, vIdx) => (
+                              <div key={vIdx} className="bg-white border-2 p-3 rounded-2xl shadow-sm relative group/record flex flex-col" style={{ borderColor: clientTheme.light }}>
+                                <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
+                                  <div className="flex items-center">
+                                    <span>{parseDateFlexible(v.date)}</span>
+                                    <span className="text-[10px] font-mono text-gray-300 ml-2 font-normal">#{v.serviceId}</span>
+                                  </div>
+                                  <span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span>
+                                </div>
+                                <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
+                                {v.formula && <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 break-words whitespace-pre-wrap">{v.formula}</p>}
+                                
+                                {v.photoLink && v.photoLink !== 'Local Image Bound' && (
+                                  <a href={v.photoLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-100 transition-colors shadow-sm self-start">
+                                    <Icons.Photo className="w-4 h-4" /> <span>查看照片 (View Photo)</span>
+                                  </a>
+                                )}
+  
+                                <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover/record:opacity-100 transition-opacity">
+                                   <button onClick={() => setEditModal({...v, firstName: client.fullName, customerId: client.customerId})} className="p-1.5 bg-gray-100 hover:text-blue-600 text-gray-500 rounded-lg"><Icons.Edit /></button>
+                                   <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.serviceId !== v.serviceId)); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )})}
-              </div>
+                  )})}
+                </div>
+              ) : (
+                <div className="bg-white border border-[#E8DCC8] rounded-3xl overflow-hidden shadow-sm">
+                   <table className="w-full text-left border-collapse">
+                      <thead className="bg-[#F6EFE9] border-b border-[#E8DCC8] text-gray-500 text-sm tracking-wider uppercase">
+                         <tr><th className="p-5 font-bold">客戶資料</th><th className="p-5 font-bold">聯絡方式</th><th className="p-5 font-bold">指定設計師</th><th className="p-5 font-bold">消費與造訪</th><th className="p-5 font-bold text-center">操作</th></tr>
+                      </thead>
+                      <tbody>
+                         {crmProfiles.filter(p => !crmSearchQuery || String(p.fullName).toLowerCase().includes(crmSearchQuery.toLowerCase()) || String(p.phone).includes(crmSearchQuery) || (p.interests && p.interests.some(t => t.toLowerCase().includes(crmSearchQuery.toLowerCase()))) || (p.tags && p.tags.some(t => t.label.toLowerCase().includes(crmSearchQuery.toLowerCase())))).map((client, i) => {
+                             const clientTheme = STYLIST_THEMES[client.preferredStylist] || STYLIST_THEMES['Others'];
+                             return (
+                             <React.Fragment key={i}>
+                               <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                 <td className="p-5 align-top">
+                                    <div className="flex items-center space-x-3 mb-1"><span className="text-xl font-black text-[#4A2511]">{client.fullName}</span><span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-0.5 rounded">{client.customerId}</span></div>
+                                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                                        {client.tags.map((t, idx) => <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.color}`}>{t.label}</span>)}
+                                        {client.interests && client.interests.map((t, idx) => <span key={`int-${idx}`} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{t}</span>)}
+                                    </div>
+                                 </td>
+                                 <td className="p-5 align-top">
+                                    <div className="font-bold text-gray-600 text-base">{client.gender==='Male'?'👨 男':'👩 女'}</div>
+                                    {client.phone && <div className="text-sm font-bold text-emerald-600 mt-2 flex items-center gap-1"><Icons.MessageCircle/> {client.phone}</div>}
+                                 </td>
+                                 <td className="p-5 align-top">
+                                    <span className="px-3 py-1.5 rounded-lg text-white text-sm font-black shadow-sm" style={{backgroundColor: clientTheme.hex}}>{client.preferredStylist}</span>
+                                 </td>
+                                 <td className="p-5 align-top">
+                                    <div className="font-black text-[#4A2511] text-xl">${client.totalSpent.toLocaleString()}</div>
+                                    <div className="text-xs font-bold text-gray-400 mt-1">{client.latestVisitDate === '1970-01-01' ? '無紀錄' : client.latestVisitDate} ({client.visitCount}次)</div>
+                                 </td>
+                                 <td className="p-5 align-top text-center">
+                                    <div className="flex flex-col gap-2">
+                                        <button onClick={() => setExpandedHistory(prev => ({...prev, [client.customerId]: !prev[client.customerId]}))} className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl font-bold hover:bg-gray-200 transition-colors text-sm">{expandedHistory[client.customerId] ? '收起紀錄' : '展開紀錄'}</button>
+                                        <button onClick={() => setProfileEditData(client)} className="text-blue-500 hover:text-blue-700 text-xs font-bold transition-colors">編輯資料</button>
+                                    </div>
+                                 </td>
+                               </tr>
+                               {expandedHistory[client.customerId] && (
+                                  <tr className="bg-gray-50/50 border-b-2 border-gray-200">
+                                     <td colSpan={5} className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
+                                          {client.visits.map((v, vIdx) => (
+                                            <div key={vIdx} className="bg-white border-2 p-3 rounded-2xl shadow-sm relative group/record flex flex-col" style={{ borderColor: clientTheme.light }}>
+                                              <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
+                                                <div className="flex items-center">
+                                                  <span>{parseDateFlexible(v.date)}</span>
+                                                  <span className="text-[10px] font-mono text-gray-300 ml-2 font-normal">#{v.serviceId}</span>
+                                                </div>
+                                                <span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span>
+                                              </div>
+                                              <p className="text-gray-600 font-bold text-sm mb-1">{v.services}</p>
+                                              {v.formula && <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 break-words whitespace-pre-wrap">{v.formula}</p>}
+                                              
+                                              {v.photoLink && v.photoLink !== 'Local Image Bound' && (
+                                                <a href={v.photoLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-100 transition-colors shadow-sm self-start">
+                                                  <Icons.Photo className="w-4 h-4" /> <span>查看照片</span>
+                                                </a>
+                                              )}
+                
+                                              <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover/record:opacity-100 transition-opacity">
+                                                 <button onClick={() => setEditModal({...v, firstName: client.fullName, customerId: client.customerId})} className="p-1.5 bg-gray-100 hover:text-blue-600 text-gray-500 rounded-lg"><Icons.Edit /></button>
+                                                 <button onClick={() => setConfirmDialog({ title: '刪除單筆紀錄', message: `確定刪除 ${v.date} 的紀錄嗎？`, onConfirm: () => { setRawHistoryRecords(prev => prev.filter(r => r.serviceId !== v.serviceId)); triggerNotification('✅ 紀錄已刪除'); } })} className="p-1.5 bg-gray-100 hover:text-red-600 text-gray-500 rounded-lg"><Icons.Trash /></button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                     </td>
+                                  </tr>
+                               )}
+                             </React.Fragment>
+                             )
+                         })}
+                      </tbody>
+                   </table>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1088,19 +1147,28 @@ export default function App() {
                     </ResponsiveContainer>
                   ) : <div className="flex-1 flex items-center justify-center text-xl font-bold text-gray-300">此區間尚無數據</div>}
               </div>
+              
               <div className="lg:col-span-4 bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex flex-col">
-                <h3 className="text-xl font-black mb-6 text-[#4A2511]">設計師業績分布</h3>
+                <h3 className="text-xl font-black mb-6 text-[#4A2511]">設計師業績分布 <span className="text-sm font-bold text-gray-400 block mt-1">(vs. 上一週期)</span></h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={dashboardData.stylistChart} layout="vertical" margin={{ top: 0, right: 100, left: 0, bottom: 0 }}>
+                    <ComposedChart data={dashboardData.stylistChart} layout="vertical" margin={{ top: 0, right: 140, left: 0, bottom: 0 }}>
                       <XAxis type="number" hide />
                       <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={80}/>
                       <Tooltip cursor={{fill: 'transparent'}} formatter={(value, name) => name === 'revenue' ? `$${value.toLocaleString()}` : `${value} 人`} />
-                      <Bar dataKey="revenue" radius={[0, 8, 8, 0]} barSize={32}>
+                      <Bar dataKey="prevRevenue" fill="#f3f4f6" radius={[0, 4, 4, 0]} barSize={12} />
+                      <Bar dataKey="revenue" radius={[0, 8, 8, 0]} barSize={24}>
                         <LabelList dataKey="revenue" content={(props) => {
                            const { x, y, width, height, value, index } = props; if (x == null || y == null || width == null || height == null) return null;
                            const sty = dashboardData.stylistChart[index]; const cnt = sty ? sty.count : 0;
-                           return <text x={x + width + 12} y={y + height / 2 + 1} fill="#4A2511" fontSize={13} fontWeight="bold" dominantBaseline="central">${Number(value || 0).toLocaleString()} / {cnt} 人</text>;
+                           const changeStr = sty.changePct !== null ? `(${sty.changePct >= 0 ? '+' : ''}${sty.changePct}%)` : '';
+                           const changeColor = sty.changePct >= 0 ? '#10b981' : '#ef4444';
+                           return (
+                             <text x={x + width + 10} y={y + height / 2 + 1} fontSize={12} fontWeight="bold" dominantBaseline="central">
+                               <tspan fill="#4A2511">${Number(value || 0).toLocaleString()} / {cnt} 人 </tspan>
+                               {sty.changePct !== null && <tspan fill={changeColor}>{changeStr}</tspan>}
+                             </text>
+                           );
                         }} />
                         {dashboardData.stylistChart.map((entry, index) => <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || '#595959'} />)}
                       </Bar>
@@ -1125,11 +1193,20 @@ export default function App() {
                          return (isNaN(dateB)?0:dateB) - (isNaN(dateA)?0:dateA);
                      }).map((r, i) => {
                          const dateObj = new Date(r.timestamp || r.date); const isDateValid = !isNaN(dateObj.getTime()); const styTheme = STYLIST_THEMES[r.stylist] || STYLIST_THEMES['Others'];
+                         
+                         // Determine gender icon
+                         const customerGender = crmProfiles.find(p => p.customerId === r.customerId)?.gender || r.gender;
+                         const genderIcon = customerGender === 'Male' ? '👨' : (customerGender === 'Female' ? '👩' : <Icons.User />);
+                         const genderColor = customerGender === 'Male' ? 'text-blue-500' : (customerGender === 'Female' ? 'text-pink-500' : 'text-[#8B5A2B]');
+
                          return (
-                             <div key={i} onClick={() => setEditModal(r)} className="grid grid-cols-12 gap-4 px-6 py-5 border-b border-gray-100 items-center hover:bg-gray-50 cursor-pointer transition-colors group">
+                             <div key={i} onClick={() => { setActiveTab('crm'); setCrmSearchQuery(r.customerId); setExpandedHistory(prev => ({...prev, [r.customerId]: true})); }} className="grid grid-cols-12 gap-4 px-6 py-5 border-b border-gray-100 items-center hover:bg-gray-50 cursor-pointer transition-colors group">
                                  <div className="col-span-2 flex flex-col"><span className="font-black text-[#4A2511] text-base">{parseDateFlexible(r.date)}</span><span className="text-xs font-bold text-gray-400 font-mono mt-0.5">{isDateValid && r.timestamp ? `建立: ${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}` : ''}</span></div>
                                  <div className="col-span-2 font-mono text-gray-400 font-bold text-sm tracking-wide">{r.serviceId}</div>
-                                 <div className="col-span-2 flex items-center gap-2 font-black text-[#8B5A2B] text-lg"><Icons.User /> {r.firstName}</div>
+                                 <div className="col-span-2 flex items-center gap-1 font-black text-[#8B5A2B] text-lg">
+                                    <span className={genderColor}>{genderIcon}</span>
+                                    <span className="truncate ml-1">{r.firstName}</span>
+                                 </div>
                                  <div className="col-span-1 flex justify-center"><span className="text-white text-xs font-bold px-3 py-1 rounded-md" style={{ backgroundColor: styTheme.hex }}>{r.stylist}</span></div>
                                  <div className="col-span-3 text-sm font-bold text-gray-600 truncate pr-4">{[r.services, r.retailItems].filter(Boolean).join(', ')}</div>
                                  <div className="col-span-1 text-sm font-bold text-gray-500">{r.paymentMethod}</div>
@@ -1143,7 +1220,6 @@ export default function App() {
           </div>
         )}
 
-        {/* DATAHUB TAB */}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
                <div className="bg-white border p-10 rounded-3xl shadow-xl max-w-sm w-full text-center">
@@ -1156,7 +1232,6 @@ export default function App() {
            </div>
         )}
 
-        {/* DATAHUB TAB UNLOCKED */}
         {activeTab === 'datahub' && dataHubUnlocked && (
           <div className="max-w-[1500px] mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
@@ -1172,14 +1247,14 @@ export default function App() {
                       <div><label className="block text-sm font-bold text-gray-600 mb-1">Google Calendar Webhook API</label><input type="text" value={calendarApiUrl} onChange={(e) => setCalendarApiUrl(e.target.value)} className="w-full bg-yellow-50 border-yellow-200 border rounded-xl py-3 px-4 text-sm font-mono outline-none text-yellow-900" /></div>
                   </div>
                   <div className="flex gap-4">
-                      <button onClick={() => {
-                          if (safeRawRecords.length === 0) {
-                              setConfirmDialog({ title: '⚠️ 警告', message: '目前系統內為 0 筆紀錄！上傳將會【清空】雲端資料表。確定繼續？', onConfirm: handleCloudBackup });
-                          } else {
-                              setConfirmDialog({ title: '強制上傳備份', message: '這將會把目前系統內的所有資料強制覆蓋到 Google Sheet 雲端。確定繼續嗎？', onConfirm: handleCloudBackup });
-                          }
-                      }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-blue-700"><Icons.Upload /> 備份至雲端</button>
-                      <button onClick={() => setConfirmDialog({ title: '強制雲端還原', message: '這將會清除目前系統的資料，並從 Google Sheet 雲端下載覆蓋。確定繼續嗎？', onConfirm: handleCloudRestore })} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-emerald-700"><Icons.Download /> 從雲端庫還原</button>
+                      <button onClick={() => setConfirmDialog({ title: '強制上傳備份', message: '這將會把目前系統內的所有資料強制覆蓋到 Google Sheet 雲端。確定繼續嗎？', onConfirm: async () => {
+                         if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
+                         try { triggerNotification('⏳ 正在上傳資料...'); await fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: rawHistoryRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); triggerNotification('✅ 資料已備份至雲端！'); } catch(e) { triggerNotification('❌ 備份失敗'); }
+                      } })} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-blue-700"><Icons.Upload /> 備份至雲端</button>
+                      <button onClick={() => setConfirmDialog({ title: '強制雲端還原', message: '這將會清除目前系統的資料，並從 Google Sheet 雲端下載覆蓋。確定繼續嗎？', onConfirm: async () => {
+                         if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
+                         try { triggerNotification('⏳ 正在從雲端下載資料...'); const res = await fetch(getApiUrl(driveApiUrl, 'get_all'), { headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); const result = await res.json(); if (result.status === 'success' && result.data) { setRawHistoryRecords(result.data); triggerNotification('✅ 雲端資料還原成功！'); } else triggerNotification('❌ 還原失敗'); } catch(e) { triggerNotification('❌ 無法連線至雲端'); }
+                      } })} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-emerald-700"><Icons.Download /> 從雲端庫還原</button>
                   </div>
                 </div>
 
@@ -1188,55 +1263,31 @@ export default function App() {
                       <h3 className="text-2xl font-black text-[#4A2511] mb-6 border-b border-gray-100 pb-4">本地檔案匯出與還原</h3>
                       <div className="grid grid-cols-2 gap-4 mb-6">
                          <button onClick={() => exportCSV('customers')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出客戶 CSV</button>
-                         <button onClick={() => exportCSV('transactions', dashboardData.records)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出交易 CSV</button>
+                         <button onClick={() => exportCSV('transactions', historyRecords)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Icons.Download /> 匯出全部交易 CSV</button>
                       </div>
                       <div className="flex gap-4">
                           <button onClick={() => {
-                             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(safeRawRecords));
+                             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawHistoryRecords));
                              const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", `Headline_Backup_${new Date().toISOString().split('T')[0]}.json`); dlAnchorElem.click(); triggerNotification('✅ JSON 備份已下載');
                           }} className="flex-1 border-2 border-[#8B5A2B] text-[#8B5A2B] font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#F6EFE9]"><Icons.Download /> 匯出 JSON</button>
                           
                           <label className="flex-1 border-2 border-[#8B5A2B] bg-[#8B5A2B] text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#6D3A14] cursor-pointer">
                               <Icons.Upload /> 匯入 JSON
-                              <input type="file" accept=".json,.txt" className="hidden" onChange={(e) => {
-                                  const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader();
+                              <input type="file" accept=".json" className="hidden" onChange={(e) => {
+                                  const file = (e.target as any).files?.[0]; if (!file) return; const reader = new FileReader();
                                   reader.onload = (event) => { 
-                                      setConfirmDialog({ 
-                                          title: '確認還原 JSON', 
-                                          message: '這將覆蓋目前的系統資料。確定繼續嗎？', 
-                                          onConfirm: () => { 
-                                              try { 
-                                                  let rawString = String(event.target?.result || '').trim();
-                                                  // Clean potential invisible characters and smart quotes
-                                                  rawString = rawString.replace(/^\uFEFF/, '').replace(/[\u201C\u201D]/g, '"');
-                                                  
-                                                  if (rawString.startsWith('<')) throw new Error('HTML_FILE');
-                                                  
-                                                  let parsed = JSON.parse(rawString); 
-                                                  let finalData = [];
-                                                  if (Array.isArray(parsed)) finalData = parsed;
-                                                  else if (parsed && Array.isArray(parsed.data)) finalData = parsed.data;
-                                                  else if (parsed && Array.isArray(parsed.records)) finalData = parsed.records;
-                                                  else if (parsed && typeof parsed === 'object') {
-                                                      const arrayProps = Object.values(parsed).filter(v => Array.isArray(v as any));
-                                                      if (arrayProps.length > 0) finalData = arrayProps.sort((a: any, b: any) => b.length - a.length)[0] as any;
-                                                  }
-                                                  
-                                                  if(!Array.isArray(finalData) || finalData.length === 0) throw new Error('NO_DATA');
-                                                  
-                                                  setRawHistoryRecords(finalData); 
-                                                  triggerNotification(`✅ JSON 還原成功 (${finalData.length} 筆紀錄)`); 
-                                              } catch(err: any) { 
-                                                  console.error(err);
-                                                  if (err.message === 'HTML_FILE') triggerNotification('❌ 格式錯誤：這似乎是一個網頁檔(HTML)而不是資料檔');
-                                                  else if (err.message === 'NO_DATA') triggerNotification('❌ 錯誤：檔案內找不到陣列資料');
-                                                  else triggerNotification('❌ 檔案已損毀或格式不支援 (JSON Parse Error)'); 
-                                              } 
-                                          } 
-                                      }); 
-                                  }; 
-                                  reader.readAsText(file); 
-                                  e.target.value = '';
+                                    setConfirmDialog({ 
+                                      title: '確認還原 JSON', message: '這將覆蓋目前的系統資料。確定繼續嗎？', 
+                                      onConfirm: () => { 
+                                        try { 
+                                          const parsed = JSON.parse(event.target?.result as string); 
+                                          if(Array.isArray(parsed)){
+                                              setRawHistoryRecords(parsed); triggerNotification('✅ JSON 資料還原成功'); 
+                                          } else { throw new Error("Format error"); }
+                                        } catch(err) { triggerNotification('❌ 檔案格式錯誤無法讀取'); } 
+                                      } 
+                                    }); 
+                                  }; reader.readAsText(file); e.target.value = '';
                               }} />
                           </label>
                       </div>
@@ -1250,7 +1301,6 @@ export default function App() {
         )}
       </main>
 
-      {/* CONFIRM DIALOG MODAL */}
       {confirmDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
@@ -1265,7 +1315,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300">
@@ -1280,7 +1329,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SCHEDULER ADD/EDIT MODAL */}
       {schedAddEditModal && (
          <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
              <form onSubmit={handleSaveCalendarEvent} className="bg-white rounded-[2rem] max-w-md w-full p-8 shadow-2xl animate-in zoom-in-95 overflow-visible relative">
@@ -1325,7 +1373,6 @@ export default function App() {
          </div>
       )}
 
-      {/* SCHEDULER DETAIL MODAL */}
       {schedDetailModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 relative border-4" style={{ borderColor: STYLIST_THEMES[schedDetailModal.stylist].hex }}>
@@ -1355,11 +1402,10 @@ export default function App() {
         </div>
       )}
 
-      {/* TAGS CONFIG MODAL */}
       {showTagsConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
-                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-[#4A2511]">管理需求標籤</h3><button onClick={() => setShowTagsConfig(false)} className="text-gray-400 hover:text-gray-800"><Icons.X/></button></div>
+                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-[#4A2511]">管理客人標籤</h3><button onClick={() => setShowTagsConfig(false)} className="text-gray-400 hover:text-gray-800"><Icons.X/></button></div>
                 <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto mb-4 custom-scrollbar p-1">
                     {interestTags.map((tag, idx) => ( <div key={idx} className="flex items-center gap-1 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl"><span className="font-bold text-gray-700 text-sm">{tag}</span><button onClick={() => setInterestTags(interestTags.filter(t => t !== tag))} className="text-red-400 hover:text-red-600 ml-1"><Icons.X/></button></div> ))}
                 </div>
@@ -1371,7 +1417,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SERVICES CONFIG MODAL */}
       {showServicesConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
@@ -1393,13 +1438,12 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault(); const updatedRecord = { ...editModal };
             setRawHistoryRecords(prev => {
-                const safePrev = Array.isArray(prev) ? prev : [];
-                const newRecords = safePrev.map(r => r.serviceId === updatedRecord.serviceId ? { ...r, ...updatedRecord } : r);
+                const newRecords = prev.map(r => r.serviceId === updatedRecord.serviceId ? { ...r, ...updatedRecord } : r);
                 if (driveApiUrl) { fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: newRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{}); }
                 return newRecords;
             });
             triggerNotification(`✅ 已更新紀錄並同步至雲端！`); setEditModal(null);
-          }} className="bg-white rounded-[2rem] max-w-2xl w-full p-8 shadow-2xl flex flex-col relative">
+          }} className="bg-white rounded-[2rem] max-w-2xl w-full p-8 shadow-2xl flex flex-col relative animate-in zoom-in-95">
             <button type="button" onClick={() => setEditModal(null)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800"><Icons.X/></button>
             <h3 className="text-3xl font-black mb-6 text-[#4A2511]">編輯服務紀錄</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1407,6 +1451,24 @@ export default function App() {
               <div><label className="block text-xs font-bold mb-1 text-gray-500">總金額 $</label><input type="number" value={editModal.price} onChange={e=>setEditModal({...editModal, price: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border" /></div>
               <div className="col-span-2"><label className="block text-xs font-bold mb-1 text-gray-500">服務與產品</label><input type="text" value={editModal.services||''} onChange={e=>setEditModal({...editModal, services: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border" /></div>
               <div className="col-span-2"><label className="block text-xs font-bold mb-1 text-gray-500">配方</label><textarea rows={3} value={editModal.formula||''} onChange={e=>setEditModal({...editModal, formula: e.target.value})} className="w-full bg-[#F6EFE9] rounded-xl py-3 px-3 font-bold outline-none focus:bg-white border font-mono text-sm" /></div>
+              
+              <div className="col-span-2">
+                 <label className="block text-xs font-bold mb-1 text-gray-500">照片 (Photo)</label>
+                 <div className="flex items-center gap-3">
+                     {editModal.photoLink && editModal.photoLink !== 'Local Image Bound' ? (
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-200">
+                           <a href={editModal.photoLink} target="_blank" rel="noreferrer" className="text-blue-600 font-bold text-sm underline flex items-center gap-1"><Icons.Photo className="w-4 h-4" /> 查看現有照片</a>
+                           <button type="button" onClick={() => setEditModal({...editModal, photoLink: ''})} className="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded ml-2 transition-colors">移除 (Remove)</button>
+                        </div>
+                     ) : (
+                        <button type="button" disabled={isUploadingPhoto} onClick={capturePhotoForEdit} className="bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors border">
+                           {isUploadingPhoto ? <Icons.Refresh className="animate-spin w-4 h-4" /> : <Icons.Photo className="w-4 h-4" />} 
+                           {isUploadingPhoto ? '上傳中...' : '新增/更改照片 (Add/Change Photo)'}
+                        </button>
+                     )}
+                 </div>
+              </div>
+
             </div>
             <button type="submit" className="w-full py-4 mt-2 rounded-xl font-black text-xl text-white bg-[#8B5A2B] hover:bg-[#6D3A14] shadow-md transition-colors">儲存更新</button>
           </form>
@@ -1419,13 +1481,12 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault(); const newFullName = (e.target as any).fullName.value.trim();
             setRawHistoryRecords(prev => {
-                const safePrev = Array.isArray(prev) ? prev : [];
-                const newRecords = safePrev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: (e.target as any).gender.value, language: (e.target as any).language.value, phone: (e.target as any).phone.value, interests: profileEditData.interests.join(', ') } : r);
+                const newRecords = prev.map(r => r.customerId === profileEditData.customerId ? { ...r, firstName: newFullName, lastName: '', name: newFullName, gender: (e.target as any).gender.value, language: (e.target as any).language.value, phone: (e.target as any).phone.value, interests: profileEditData.interests.join(', ') } : r);
                 if (driveApiUrl) { fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: newRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).catch(()=>{}); }
                 return newRecords;
             });
             triggerNotification(`✅ 已更新檔案並同步至雲端！`); setProfileEditData(null);
-          }} className="bg-white rounded-[2rem] max-w-lg w-full p-8 shadow-2xl flex flex-col relative">
+          }} className="bg-white rounded-[2rem] max-w-lg w-full p-8 shadow-2xl flex flex-col relative animate-in zoom-in-95">
             <button type="button" onClick={() => setProfileEditData(null)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800"><Icons.X/></button>
             <h3 className="text-3xl font-black mb-6 text-[#4A2511]">編輯客戶基本資料</h3>
             <div className="space-y-4 mb-6">
@@ -1438,7 +1499,7 @@ export default function App() {
                 </div>
               </div>
               <div className="pt-2">
-                  <label className="block text-xs font-bold mb-2 text-gray-500">編輯標籤 (Interests & Tags)</label>
+                  <label className="block text-xs font-bold mb-2 text-gray-500">編輯標籤 (Customer Tags)</label>
                   <div className="flex flex-wrap gap-2">
                      {interestTags.map(tag => {
                          const isSelected = profileEditData.interests.includes(tag);
