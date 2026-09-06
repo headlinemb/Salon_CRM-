@@ -114,6 +114,7 @@ export default function App() {
   const [interestTags, setInterestTags] = useState(() => JSON.parse(localStorage.getItem('headline_tags_v1') || JSON.stringify(['白頭髮遮蓋', '想試染髮', '有機/天然品牌', '縮毛矯正', '受損髮質修護'])));
   const [showRetailSection, setShowRetailSection] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadAbortController, setUploadAbortController] = useState(null); // Added abort controller state
   const [isSyncing, setIsSyncing] = useState(false);
 
   const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { 
@@ -141,7 +142,6 @@ export default function App() {
 
   const getApiUrl = (baseUrl, action) => { if (!baseUrl) return ''; try { const url = new URL(baseUrl); url.searchParams.set('action', action); return url.toString(); } catch (e) { return `${baseUrl}?action=${action}`; } };
 
-  // SMART SYNC HANDLER - Used everywhere to prevent conflicts
   const updateRecordsAndSync = (updater) => {
       setRawHistoryRecords(prev => {
           const newRecords = typeof updater === 'function' ? updater(prev) : updater;
@@ -411,20 +411,38 @@ export default function App() {
     try {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; 
         input.onchange = (e) => {
-            const file = (e.target as any).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            const file = (e.target).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64Data = (event.target.result as string).split(',')[1];
+                const base64Data = (event.target.result).split(',')[1];
                 if (!driveApiUrl) { setFormData(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
+                
+                const controller = new AbortController();
+                setUploadAbortController(controller);
+
                 try {
                     const dynamicId = formData.clientType === 'New' || !formData.customerId ? 'NewClient' : formData.customerId;
                     const fName = formData.firstName || 'Unknown';
                     const currentServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
                     const filename = `${dynamicId}_${fName}_${currentServiceId}.jpg`;
                     
-                    const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    const res = await fetch(driveApiUrl, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        signal: controller.signal
+                    });
                     const result = await res.json();
                     if(result.status === 'success') { setFormData(prev => ({...prev, photoLink: result.url, serviceId: currentServiceId})); triggerNotification('✅ 照片已成功上傳至雲端！'); }
-                } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
+                } catch(err) { 
+                    if (err.name === 'AbortError') {
+                        console.log('Upload aborted by user');
+                    } else {
+                        triggerNotification('❌ 照片上傳失敗'); 
+                    }
+                } finally {
+                    setIsUploadingPhoto(false);
+                    setUploadAbortController(null);
+                }
             }; reader.readAsDataURL(file);
         }; input.click();
     } catch(e) { triggerNotification('❌ 無法啟動相簿/相機'); }
@@ -434,16 +452,34 @@ export default function App() {
     try {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
         input.onchange = (e) => {
-            const file = (e.target as any).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
+            const file = (e.target).files[0]; if(!file) return; setIsUploadingPhoto(true); const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64Data = (event.target.result as string).split(',')[1];
+                const base64Data = (event.target.result).split(',')[1];
                 if (!driveApiUrl) { setEditModal(prev => ({...prev, photoLink: 'Local Image Bound'})); setIsUploadingPhoto(false); return triggerNotification('✅ 圖片已暫存 (未設定 API)'); }
+                
+                const controller = new AbortController();
+                setUploadAbortController(controller);
+
                 try {
                     const filename = `${editModal.customerId}_${editModal.firstName}_${editModal.serviceId}_update.jpg`;
-                    const res = await fetch(driveApiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    const res = await fetch(driveApiUrl, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ action: 'upload_photo', filename: filename, mimeType: file.type, data: base64Data }), 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        signal: controller.signal
+                    });
                     const result = await res.json();
                     if(result.status === 'success') { setEditModal(prev => ({...prev, photoLink: result.url})); triggerNotification('✅ 照片已更新！'); }
-                } catch(err) { triggerNotification('❌ 照片上傳失敗'); } setIsUploadingPhoto(false);
+                } catch(err) { 
+                    if (err.name === 'AbortError') {
+                        console.log('Upload aborted by user');
+                    } else {
+                        triggerNotification('❌ 照片上傳失敗'); 
+                    }
+                } finally {
+                    setIsUploadingPhoto(false);
+                    setUploadAbortController(null);
+                }
             }; reader.readAsDataURL(file);
         }; input.click();
     } catch(e) { triggerNotification('❌ 無法選擇照片'); }
@@ -451,7 +487,7 @@ export default function App() {
 
   const handleSubmitCheckout = (e) => {
     e.preventDefault(); if (!formData.firstName) return triggerNotification('請輸入顧客姓名！'); if (!formData.price || parseInt(formData.price) <= 0) return triggerNotification('請輸入有效金額！');
-    if (isUploadingPhoto) { playAudioFeedback('warn'); return triggerNotification('⏳ 圖片上傳中，請稍候再儲存！'); }
+    if (isUploadingPhoto) { playAudioFeedback('warn'); return triggerNotification('⏳ 圖片上傳中，請稍候再儲存或先取消上傳！'); }
     
     setSubmitting(true);
     const currentServiceId = formData.serviceId || generateServiceId(formData.date, safeRawRecords);
@@ -473,6 +509,29 @@ export default function App() {
       const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Headline_${type}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
   };
 
+  const StylistCustomTooltip = ({ active, payload }) => {
+      if (active && payload && payload.length) {
+          const data = payload[0].payload;
+          const avg = data.count ? Math.round(data.revenue / data.count) : 0;
+          return (
+              <div className="bg-white/95 backdrop-blur-sm p-4 border border-[#E8DCC8] rounded-2xl shadow-xl font-bold">
+                  <p className="text-lg text-[#4A2511] mb-2">{data.name}</p>
+                  <div className="space-y-1 text-sm">
+                      <p className="flex justify-between gap-4 text-emerald-600"><span>總業績:</span> <span>${data.revenue.toLocaleString()}</span></p>
+                      <p className="flex justify-between gap-4 text-blue-600"><span>服務客數:</span> <span>{data.count} 人</span></p>
+                      <p className="flex justify-between gap-4 text-purple-600 pt-1 border-t border-gray-100"><span>平均客單價:</span> <span>${avg.toLocaleString()}</span></p>
+                      {data.changePct !== null && (
+                          <p className={`flex justify-between gap-4 pt-1 ${data.changePct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                              <span>對比上期:</span> <span>{data.changePct >= 0 ? '+' : ''}{data.changePct}%</span>
+                          </p>
+                      )}
+                  </div>
+              </div>
+          );
+      }
+      return null;
+  };
+
   const MeterChart = ({ title, data, colors }) => {
     const total = data.reduce((sum, item) => sum + (isNaN(Number(item.value)) ? 0 : Number(item.value)), 0);
     const displayData = total === 0 ? [{ name: '無資料', value: 1 }] : data.map(d => ({ ...d, value: isNaN(Number(d.value)) ? 0 : Number(d.value) }));
@@ -489,10 +548,10 @@ export default function App() {
     <div className="h-screen flex flex-col font-sans selection:bg-[#E8DCC8] selection:text-[#4A2511] overflow-hidden bg-[#F6EFE9] text-[#4A2511]">
       {notification && <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 font-bold text-xl" style={{ backgroundColor: activeTheme.hex }}><Icons.Check /> <span>{notification}</span></div>}
       
-      {/* HEADER SECTION */}
+      {}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8 w-full justify-between">
-          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.3 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
+          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.4 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
           
           <div className="flex items-center gap-4">
             {/* Global Sync Button */}
@@ -509,10 +568,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative">
         
-        {/* SCHEDULER TAB */}
+        {}
         {activeTab === 'scheduler' && (
           <div className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300 h-full flex flex-col">
              <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col h-full">
@@ -645,7 +703,7 @@ export default function App() {
           </div>
         )}
 
-        {/* CHECKOUT TAB */}
+        {}
         {activeTab === 'checkout' && (
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
@@ -864,12 +922,17 @@ export default function App() {
                       </div>
                       <textarea rows={3} placeholder="例: 8B 70ml + 7MT 30ml + 9%..." value={formData.formula} onChange={(e) => handleInputChange('formula', e.target.value)} className="w-full flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xl font-mono focus:bg-white outline-none focus:border-[#8B5A2B] transition-colors mb-4" />
                       
-                      {/* Photo Section */}
-                      <div className="mt-auto pt-4 border-t border-[#E8DCC8]">
-                          <button type="button" onClick={capturePhoto} className={`w-full py-4 rounded-2xl font-black shadow-sm flex items-center justify-center gap-2 transition-all text-lg ${isUploadingPhoto ? 'bg-gray-100 text-gray-400 border border-gray-200' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'}`} disabled={isUploadingPhoto}>
+                      {/* Photo Section with Abort Option */}
+                      <div className="mt-auto pt-4 border-t border-[#E8DCC8] flex gap-2">
+                          <button type="button" onClick={capturePhoto} className={`flex-1 py-4 rounded-2xl font-black shadow-sm flex items-center justify-center gap-2 transition-all text-lg ${isUploadingPhoto ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'}`} disabled={isUploadingPhoto}>
                               {isUploadingPhoto ? <Icons.Refresh className="animate-spin inline-block w-6 h-6" /> : <Icons.Photo className="w-6 h-6" />} 
                               <span>{isUploadingPhoto ? '上傳中 (Uploading)...' : formData.photoLink ? '✅ 已綁定照片 (Photo Bound)' : '📷 拍照上傳 (Take Photo)'}</span>
                           </button>
+                          {isUploadingPhoto && (
+                              <button type="button" onClick={() => { if(uploadAbortController) uploadAbortController.abort(); setIsUploadingPhoto(false); triggerNotification('⚠️ 已取消上傳 (Upload Aborted)'); }} className="px-6 py-4 rounded-2xl font-black text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 transition-all shadow-sm">
+                                  取消 (Abort)
+                              </button>
+                          )}
                       </div>
                    </div>
 
@@ -881,7 +944,7 @@ export default function App() {
           </form>
         )}
 
-        {/* CRM TAB */}
+        {}
         {activeTab === 'crm' && (
           <div className="max-w-[1500px] mx-auto space-y-6">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm">
@@ -1053,7 +1116,7 @@ export default function App() {
           </div>
         )}
 
-        {/* DASHBOARD TAB */}
+        {}
         {activeTab === 'dashboard' && (
           <div className="max-w-[1500px] mx-auto space-y-8 animate-in fade-in duration-300 pb-10">
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1171,24 +1234,12 @@ export default function App() {
                 <h3 className="text-xl font-black mb-6 text-[#4A2511]">設計師業績分布 <span className="text-sm font-bold text-gray-400 block mt-1">(vs. 上一週期)</span></h3>
                 {dashboardData.stylistChart.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={dashboardData.stylistChart} layout="vertical" margin={{ top: 0, right: 140, left: 0, bottom: 0 }}>
+                    <ComposedChart data={dashboardData.stylistChart} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={80}/>
-                      <Tooltip cursor={{fill: 'transparent'}} formatter={(value, name) => name === 'revenue' ? `$${value.toLocaleString()}` : `${value} 人`} />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#4A2511', fontSize: 13, fontWeight: 'bold' }} width={60}/>
+                      <Tooltip cursor={{fill: '#F6EFE9'}} content={<StylistCustomTooltip />} />
                       <Bar dataKey="prevRevenue" fill="#f3f4f6" radius={[0, 4, 4, 0]} barSize={12} />
                       <Bar dataKey="revenue" radius={[0, 8, 8, 0]} barSize={24}>
-                        <LabelList dataKey="revenue" content={(props) => {
-                           const { x, y, width, height, value, index } = props; if (x == null || y == null || width == null || height == null) return null;
-                           const sty = dashboardData.stylistChart[index]; const cnt = sty ? sty.count : 0;
-                           const changeStr = sty.changePct !== null ? `(${sty.changePct >= 0 ? '+' : ''}${sty.changePct}%)` : '';
-                           const changeColor = sty.changePct >= 0 ? '#10b981' : '#ef4444';
-                           return (
-                             <text x={x + width + 10} y={y + height / 2 + 1} fontSize={12} fontWeight="bold" dominantBaseline="central">
-                               <tspan fill="#4A2511">${Number(value || 0).toLocaleString()} / {cnt} 人 </tspan>
-                               {sty.changePct !== null && <tspan fill={changeColor}>{changeStr}</tspan>}
-                             </text>
-                           );
-                        }} />
                         {dashboardData.stylistChart.map((entry, index) => <Cell key={`cell-${index}`} fill={STYLIST_THEMES[entry.name]?.hex || '#595959'} />)}
                       </Bar>
                     </ComposedChart>
@@ -1214,6 +1265,7 @@ export default function App() {
                          const dateObj = new Date(r.timestamp || r.date); const isDateValid = !isNaN(dateObj.getTime()); const styTheme = STYLIST_THEMES[r.stylist] || STYLIST_THEMES['Others'];
                          
                          const customerGender = crmProfiles.find(p => p.customerId === r.customerId)?.gender || r.gender;
+                         const customerPhone = crmProfiles.find(p => p.customerId === r.customerId)?.phone || r.phone;
                          const genderText = customerGender === 'Male' ? '男' : (customerGender === 'Female' ? '女' : '?');
                          const genderColor = customerGender === 'Male' ? 'text-blue-600 bg-blue-50 border-blue-200' : (customerGender === 'Female' ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-500 bg-gray-50 border-gray-200');
 
@@ -1221,9 +1273,12 @@ export default function App() {
                              <div key={i} onClick={() => { setActiveTab('crm'); setCrmSearchQuery(r.customerId); setExpandedHistory(prev => ({...prev, [r.customerId]: true})); }} className="grid grid-cols-12 gap-4 px-6 py-5 border-b border-gray-100 items-center hover:bg-gray-50 cursor-pointer transition-colors group">
                                  <div className="col-span-2 flex flex-col"><span className="font-black text-[#4A2511] text-base">{parseDateFlexible(r.date)}</span><span className="text-xs font-bold text-gray-400 font-mono mt-0.5">{isDateValid && r.timestamp ? `建立: ${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}` : ''}</span></div>
                                  <div className="col-span-2 font-mono text-gray-400 font-bold text-sm tracking-wide">{r.serviceId}</div>
-                                 <div className="col-span-2 flex items-center gap-1 font-black text-[#8B5A2B] text-lg">
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${genderColor}`}>{genderText}</span>
-                                    <span className="truncate ml-1">{r.firstName}</span>
+                                 <div className="col-span-2 flex items-center gap-2 font-black text-[#8B5A2B] text-lg">
+                                    <span className={`text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full border ${genderColor} shrink-0`}>{genderText}</span>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="truncate leading-tight">{r.firstName}</span>
+                                        {customerPhone && <span className="text-[11px] font-mono text-gray-400 leading-tight font-normal mt-0.5">{customerPhone}</span>}
+                                    </div>
                                  </div>
                                  <div className="col-span-1 flex justify-center"><span className="text-white text-xs font-bold px-3 py-1 rounded-md" style={{ backgroundColor: styTheme.hex }}>{r.stylist}</span></div>
                                  <div className="col-span-3 text-sm font-bold text-gray-600 truncate pr-4">{[r.services, r.retailItems].filter(Boolean).join(', ')}</div>
@@ -1238,7 +1293,7 @@ export default function App() {
           </div>
         )}
 
-        {/* DATAHUB TAB */}
+        {}
         {activeTab === 'datahub' && !dataHubUnlocked && (
            <div className="flex flex-col items-center justify-center pt-20 animate-in zoom-in-95">
                <div className="bg-white border p-10 rounded-3xl shadow-xl max-w-sm w-full text-center">
@@ -1321,6 +1376,7 @@ export default function App() {
         )}
       </main>
 
+      {}
       {/* CONFIRM DIALOG MODAL */}
       {confirmDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
@@ -1430,7 +1486,7 @@ export default function App() {
       {showTagsConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
-                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-[#4A2511]">管理客人標籤</h3><button onClick={() => setShowTagsConfig(false)} className="text-gray-400 hover:text-gray-800"><Icons.X/></button></div>
+                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-[#4A2511]">管理需求標籤</h3><button onClick={() => setShowTagsConfig(false)} className="text-gray-400 hover:text-gray-800"><Icons.X/></button></div>
                 <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto mb-4 custom-scrollbar p-1">
                     {interestTags.map((tag, idx) => ( <div key={idx} className="flex items-center gap-1 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl"><span className="font-bold text-gray-700 text-sm">{tag}</span><button onClick={() => setInterestTags(interestTags.filter(t => t !== tag))} className="text-red-400 hover:text-red-600 ml-1"><Icons.X/></button></div> ))}
                 </div>
@@ -1463,7 +1519,7 @@ export default function App() {
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
             e.preventDefault(); 
-            if (isUploadingPhoto) { playAudioFeedback('warn'); return triggerNotification('⏳ 圖片上傳中，請稍候再儲存！'); }
+            if (isUploadingPhoto) { playAudioFeedback('warn'); return triggerNotification('⏳ 圖片上傳中，請稍候再儲存或先取消上傳！'); }
             const updatedRecord = { ...editModal };
             updateRecordsAndSync(prev => prev.map(r => r.serviceId === updatedRecord.serviceId ? { ...r, ...updatedRecord } : r));
             triggerNotification(`✅ 已更新紀錄並同步至雲端！`); setEditModal(null);
@@ -1485,10 +1541,18 @@ export default function App() {
                            <button type="button" onClick={() => setEditModal({...editModal, photoLink: ''})} className="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded ml-2 transition-colors">移除 (Remove)</button>
                         </div>
                      ) : (
-                        <button type="button" disabled={isUploadingPhoto} onClick={capturePhotoForEdit} className={`text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors border ${isUploadingPhoto ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'}`}>
-                           {isUploadingPhoto ? <Icons.Refresh className="animate-spin w-4 h-4" /> : <Icons.Photo className="w-4 h-4" />} 
-                           {isUploadingPhoto ? '上傳中...' : '新增/更改照片 (Add/Change Photo)'}
-                        </button>
+                         isUploadingPhoto ? (
+                             <div className="flex gap-2">
+                                <button type="button" disabled className="text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors border bg-gray-100 text-gray-400 border-gray-200">
+                                   <Icons.Refresh className="animate-spin w-4 h-4" /> 上傳中...
+                                </button>
+                                <button type="button" onClick={() => { if(uploadAbortController) uploadAbortController.abort(); setIsUploadingPhoto(false); triggerNotification('⚠️ 已取消上傳 (Upload Aborted)'); }} className="text-sm font-bold py-2.5 px-4 rounded-xl text-red-500 bg-red-50 border border-red-200 hover:bg-red-100">取消 (Abort)</button>
+                             </div>
+                         ) : (
+                             <button type="button" onClick={capturePhotoForEdit} className="text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors border bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200">
+                               <Icons.Photo className="w-4 h-4" /> 新增/更改照片 (Add/Change Photo)
+                             </button>
+                         )
                      )}
                  </div>
               </div>
