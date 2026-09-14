@@ -91,6 +91,10 @@ export default function App() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showNameSuggest, setShowNameSuggest] = useState(false);
   const [nameSuggests, setNameSuggests] = useState([]);
+  
+  // V14.5 New Filter and Sort states
+  const [trafficFilterStylist, setTrafficFilterStylist] = useState('All');
+  const [transactionSortOrder, setTransactionSortOrder] = useState('desc');
 
   const [driveApiUrl, setDriveApiUrl] = useState(() => localStorage.getItem('headline_drive_api_v13_9') || 'https://script.google.com/macros/s/AKfycbxCv4qRXnzrAimYoRfI1fwJLqM4P9NfyAAumRalugmgUhTs0eKEop3Z712JKET8rIgbKQ/exec');
   const [calendarApiUrl, setCalendarApiUrl] = useState(() => localStorage.getItem('headline_calendar_api_v13_9') || 'https://script.google.com/macros/s/AKfycbwcxZHp2p19GyIew9o0WRz9w8hIMSDu1qJIoJgStMX6tKez7PIK2dGohoPvrl7WVwj9qw/exec');
@@ -114,7 +118,7 @@ export default function App() {
   const [interestTags, setInterestTags] = useState(() => JSON.parse(localStorage.getItem('headline_tags_v1') || JSON.stringify(['白頭髮遮蓋', '想試染髮', '有機/天然品牌', '縮毛矯正', '受損髮質修護'])));
   const [showRetailSection, setShowRetailSection] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [uploadAbortController, setUploadAbortController] = useState(null); // Added abort controller state
+  const [uploadAbortController, setUploadAbortController] = useState(null); 
   const [isSyncing, setIsSyncing] = useState(false);
 
   const [rawHistoryRecords, setRawHistoryRecords] = useState(() => { 
@@ -319,7 +323,7 @@ export default function App() {
             if (r.language === 'EN') m.en++; else m.zh++; 
             if (r.customerSource?.includes('新客')) {
                 m.newCus++;
-                let src = r.customerSource.includes('Referral') ? '朋友介紹' : (r.customerSource.includes('IG') || r.customerSource.includes('FB') ? 'IG/FB' : 'Walk-in');
+                let src = r.customerSource.includes('Referral') ? '朋友介紹' : (r.customerSource.includes('IG') || r.customerSource.includes('FB') ? 'IG/FB' : (r.customerSource.includes('旅客') || r.customerSource.includes('Tourist') ? '旅客' : 'Walk-in'));
                 sourceMap[src] = (sourceMap[src] || 0) + 1;
             }
             const sty = ['Man', 'Becky', 'Sammy'].includes(cleanStylistName(r.stylist)) ? cleanStylistName(r.stylist) : 'Others';
@@ -362,6 +366,22 @@ export default function App() {
         newCusPct: curr.clients ? ((curr.newCus / curr.clients) * 100).toFixed(0) : 0, retCusPct: curr.clients ? (((curr.clients - curr.newCus) / curr.clients) * 100).toFixed(0) : 0,
     };
   }, [historyRecords, dashboardPeriod, dashboardDateRef, dashboardStartDate, dashboardEndDate]);
+
+  const trafficChartData = useMemo(() => {
+    let dailyMap = {};
+    (dashboardData.records || []).forEach(r => {
+        const sty = cleanStylistName(r.stylist);
+        if (trafficFilterStylist !== 'All' && sty !== trafficFilterStylist) return;
+
+        const recDate = new Date(parseDateFlexible(r.date));
+        if (!isNaN(recDate.getTime())) {
+            const dateKey = `${recDate.getMonth()+1}/${recDate.getDate()}`;
+            if (!dailyMap[dateKey]) dailyMap[dateKey] = { time: dateKey, count: 0, isSunday: recDate.getDay()===0, rawDate: recDate.getTime() };
+            dailyMap[dateKey].count += 1;
+        }
+    });
+    return Object.values(dailyMap).sort((a,b) => a.rawDate - b.rawDate);
+  }, [dashboardData.records, trafficFilterStylist]);
 
   const checkConflict = (stylist, dateStr, timeStr, durationMins, excludeEventId = null) => {
     if(!stylist || !dateStr || !timeStr || !durationMins) return false;
@@ -551,10 +571,9 @@ export default function App() {
       {}
       <header className="shrink-0 z-40 px-6 py-2 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-[#E8DCC8] shadow-sm">
         <div className="flex items-center space-x-8 w-full justify-between">
-          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.4 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
+          <div className="flex flex-col items-start justify-center select-none pt-1"><h1 className="text-3xl font-bold tracking-[0.2em] leading-none text-[#4A2511] flex items-center">HEADLINE <span className="text-[10px] font-bold text-gray-400 tracking-normal ml-3 mt-1 bg-gray-100 px-1.5 py-0.5 rounded border">v14.5 Pro</span></h1><span className="text-xs tracking-[0.4em] uppercase mt-1 font-semibold text-gray-500">Hair Salon</span></div>
           
           <div className="flex items-center gap-4">
-            {/* Global Sync Button */}
             <button type="button" onClick={handleGlobalSync} disabled={isSyncing} className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm border border-blue-100'}`}>
               <span className={isSyncing ? "animate-spin inline-block" : "inline-block"}><Icons.Refresh /></span> <span>{isSyncing ? '同步中...' : '雲端同步'}</span>
             </button>
@@ -708,7 +727,6 @@ export default function App() {
           <form onSubmit={handleSubmitCheckout} className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
               
-              {/* Dynamic Enlargeable Container */}
               <div className={isProfileExpanded ? "fixed inset-4 md:inset-10 z-[200] bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col transition-all border border-gray-200" : "lg:col-span-5 bg-white border border-gray-200 p-8 shadow-sm relative overflow-hidden rounded-[2.5rem] flex flex-col transition-all"}>
                 <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-gray-200 to-gray-100"></div>
                 
@@ -774,7 +792,6 @@ export default function App() {
                      </div>
                   </div>
 
-                  {/* Conditionally hidden tags section when expanded */}
                   {!isProfileExpanded && (
                      <div className="border-t border-gray-100 pt-6 mt-6">
                         <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex justify-between items-center"><span>客人標籤 Customer Tag (Optional)</span><button type="button" onClick={()=>setShowTagsConfig(true)} className="text-blue-500 hover:text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">管理標籤</button></h3>
@@ -786,7 +803,6 @@ export default function App() {
                      </div>
                   )}
 
-                  {/* Submit/Done button exclusively for Enlarge Mode */}
                   {isProfileExpanded && (
                      <div className="mt-auto pt-8 flex justify-center">
                         <button type="button" onClick={() => setIsProfileExpanded(false)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-2xl font-black rounded-2xl shadow-lg transition-all">
@@ -797,10 +813,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Dim background overlay when enlarged */}
               {isProfileExpanded && <div className="fixed inset-0 bg-black/60 z-[190] backdrop-blur-sm transition-all" onClick={() => setIsProfileExpanded(false)}></div>}
 
-              {/* Right Side Columns */}
               <div className="lg:col-span-7 bg-[#F6EFE9] border border-[#E8DCC8] rounded-[2.5rem] p-8 shadow-sm flex flex-col relative">
                    <div className="absolute top-0 left-0 right-0 h-3" style={{ backgroundColor: activeTheme.hex }}></div>
                    
@@ -826,7 +840,11 @@ export default function App() {
                               </div>
                               {formData.clientType === 'New' ? (
                                 <select value={formData.sourceDetail} onChange={(e) => handleInputChange('sourceDetail', e.target.value)} className="w-[60%] bg-gray-50 border border-gray-200 rounded-2xl px-4 text-lg font-bold outline-none focus:border-[#8B5A2B]">
-                                  <option value="Walk-in">Walk-in</option><option value="Referral">朋友介紹 (Referral)</option><option value="IG/Facebook">IG/FB</option><option value="Google">Google</option>
+                                  <option value="Walk-in">Walk-in</option>
+                                  <option value="旅客 (Tourist)">旅客 (Tourist)</option>
+                                  <option value="Referral">朋友介紹 (Referral)</option>
+                                  <option value="IG/Facebook">IG/FB</option>
+                                  <option value="Google">Google</option>
                                 </select>
                               ) : (
                                 <div className="w-[60%] bg-gray-50 border border-gray-200 rounded-2xl px-4 flex items-center justify-center text-gray-400 font-bold">自動歸檔為舊客</div>
@@ -922,7 +940,6 @@ export default function App() {
                       </div>
                       <textarea rows={3} placeholder="例: 8B 70ml + 7MT 30ml + 9%..." value={formData.formula} onChange={(e) => handleInputChange('formula', e.target.value)} className="w-full flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xl font-mono focus:bg-white outline-none focus:border-[#8B5A2B] transition-colors mb-4" />
                       
-                      {/* Photo Section with Abort Option */}
                       <div className="mt-auto pt-4 border-t border-[#E8DCC8] flex gap-2">
                           <button type="button" onClick={capturePhoto} className={`flex-1 py-4 rounded-2xl font-black shadow-sm flex items-center justify-center gap-2 transition-all text-lg ${isUploadingPhoto ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'}`} disabled={isUploadingPhoto}>
                               {isUploadingPhoto ? <Icons.Refresh className="animate-spin inline-block w-6 h-6" /> : <Icons.Photo className="w-6 h-6" />} 
@@ -1011,7 +1028,7 @@ export default function App() {
                                 <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
                                   <div className="flex items-center">
                                     <span>{parseDateFlexible(v.date)}</span>
-                                    <span className="text-[10px] font-mono text-gray-300 ml-2 font-normal">#{v.serviceId}</span>
+                                    <span className="text-[10px] font-mono text-gray-400 ml-2 font-normal">#{v.serviceId}</span>
                                   </div>
                                   <span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span>
                                 </div>
@@ -1082,7 +1099,7 @@ export default function App() {
                                               <div className="flex justify-between font-black text-lg text-[#4A2511] mb-1 pr-12">
                                                 <div className="flex items-center">
                                                   <span>{parseDateFlexible(v.date)}</span>
-                                                  <span className="text-[10px] font-mono text-gray-300 ml-2 font-normal">#{v.serviceId}</span>
+                                                  <span className="text-[10px] font-mono text-gray-400 ml-2 font-normal">#{v.serviceId}</span>
                                                 </div>
                                                 <span style={{ color: clientTheme.hex }}>${parsePriceRobust(v.price).toLocaleString()}</span>
                                               </div>
@@ -1196,15 +1213,25 @@ export default function App() {
               </div>
             </div>
 
+            {}
             <div className="bg-white border border-[#E8DCC8] rounded-3xl p-6 shadow-sm h-[400px] flex flex-col">
-                <h3 className="text-xl font-black text-[#4A2511] mb-6">客流量分布 (Traffic via Date) <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-md ml-2 align-middle">紅柱為星期日</span></h3>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-black text-[#4A2511]">
+                        客流量分布 (Traffic via Date) 
+                        <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-md ml-2 align-middle">紅柱為星期日</span>
+                    </h3>
+                    <select value={trafficFilterStylist} onChange={e => setTrafficFilterStylist(e.target.value)} className="bg-gray-50 border border-gray-200 text-[#4A2511] font-bold py-1.5 px-3 rounded-xl outline-none focus:border-[#8B5A2B] cursor-pointer">
+                        <option value="All">All Stylists</option>
+                        {stylists.filter(s=>s!=='Others').map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.dailyChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <BarChart data={trafficChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill:'#9ca3af', fontSize:12, fontWeight:'bold'}} />
                         <YAxis axisLine={false} tickLine={false} tick={{fill:'#9ca3af', fontSize:12}} />
                         <Tooltip cursor={{fill: '#F6EFE9'}} contentStyle={{borderRadius:'12px', fontWeight:'bold', border:'none', boxShadow:'0 10px 15px -3px rgba(0,0,0,0.1)'}} formatter={(value)=>[`${value} 人`, '客數']} />
                         <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                            {dashboardData.dailyChart.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.isSunday ? '#ef4444' : '#8B5A2B'} />)}
+                            {trafficChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.isSunday ? '#ef4444' : '#8B5A2B'} />)}
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -1255,12 +1282,25 @@ export default function App() {
                </div>
                <div className="w-full">
                   <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-[#F6EFE9]/50 border-b border-[#E8DCC8] text-sm font-black text-gray-500 tracking-wider">
-                     <div className="col-span-2">服務日期 / 建立時間</div><div className="col-span-2">交易單號</div><div className="col-span-2">客戶姓名</div><div className="col-span-1 text-center">設計師</div><div className="col-span-3">服務/產品項目</div><div className="col-span-1">支付方式</div><div className="col-span-1 text-right">總額</div>
+                     <div className="col-span-2 cursor-pointer hover:text-[#8B5A2B] transition-colors flex items-center select-none" onClick={() => setTransactionSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
+                         服務日期 {transactionSortOrder === 'desc' ? '↓' : '↑'}
+                     </div>
+                     <div className="col-span-2">交易單號</div>
+                     <div className="col-span-2">客戶姓名</div>
+                     <div className="col-span-1 text-center">設計師</div>
+                     <div className="col-span-3">服務/產品項目</div>
+                     <div className="col-span-1">支付方式</div>
+                     <div className="col-span-1 text-right">總額</div>
                   </div>
                   <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                      {dashboardData.records.length > 0 ? dashboardData.records.sort((a,b)=>{
-                         const dateA = new Date(a.timestamp||a.date).getTime(); const dateB = new Date(b.timestamp||b.date).getTime();
-                         return (isNaN(dateB)?0:dateB) - (isNaN(dateA)?0:dateA);
+                         const dateA = new Date(a.date).getTime(); const dateB = new Date(b.date).getTime();
+                         const valA = isNaN(dateA) ? 0 : dateA; const valB = isNaN(dateB) ? 0 : dateB;
+                         if (valA === valB) {
+                             const tA = new Date(a.timestamp || 0).getTime() || 0; const tB = new Date(b.timestamp || 0).getTime() || 0;
+                             return transactionSortOrder === 'desc' ? tB - tA : tA - tB;
+                         }
+                         return transactionSortOrder === 'desc' ? valB - valA : valA - valB;
                      }).map((r, i) => {
                          const dateObj = new Date(r.timestamp || r.date); const isDateValid = !isNaN(dateObj.getTime()); const styTheme = STYLIST_THEMES[r.stylist] || STYLIST_THEMES['Others'];
                          
@@ -1323,6 +1363,7 @@ export default function App() {
                   <div className="flex gap-4">
                       <button onClick={() => setConfirmDialog({ title: '強制上傳備份', message: '這將會把目前系統內的所有資料強制覆蓋到 Google Sheet 雲端。確定繼續嗎？', onConfirm: async () => {
                          if (!driveApiUrl) return triggerNotification('請先設定 API 網址');
+                         if (rawHistoryRecords.length === 0) return triggerNotification('⚠️ 警告：目前系統為空，禁止覆蓋雲端！');
                          try { triggerNotification('⏳ 正在上傳資料...'); await fetch(getApiUrl(driveApiUrl, 'sync_all'), { method: 'POST', body: JSON.stringify({ action: 'sync_all', records: rawHistoryRecords }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); triggerNotification('✅ 資料已備份至雲端！'); } catch(e) { triggerNotification('❌ 備份失敗'); }
                       } })} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-blue-700 transition-colors"><Icons.Upload /> 備份至雲端</button>
                       
@@ -1377,7 +1418,6 @@ export default function App() {
       </main>
 
       {}
-      {/* CONFIRM DIALOG MODAL */}
       {confirmDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
@@ -1392,7 +1432,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] max-w-lg w-full p-12 text-center shadow-2xl animate-in zoom-in-95 duration-300">
@@ -1407,7 +1446,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SCHEDULER ADD/EDIT MODAL */}
       {schedAddEditModal && (
          <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
              <form onSubmit={handleSaveCalendarEvent} className="bg-white rounded-[2rem] max-w-md w-full p-8 shadow-2xl animate-in zoom-in-95 overflow-visible relative">
@@ -1452,7 +1490,6 @@ export default function App() {
          </div>
       )}
 
-      {/* SCHEDULER DETAIL MODAL */}
       {schedDetailModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 relative border-4" style={{ borderColor: STYLIST_THEMES[schedDetailModal.stylist].hex }}>
@@ -1482,7 +1519,6 @@ export default function App() {
         </div>
       )}
 
-      {/* TAGS MODAL */}
       {showTagsConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
@@ -1498,7 +1534,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SERVICES MODAL */}
       {showServicesConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95">
@@ -1514,7 +1549,6 @@ export default function App() {
         </div>
       )}
 
-      {/* RECORD EDIT MODAL */}
       {editModal && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
@@ -1563,7 +1597,6 @@ export default function App() {
         </div>
       )}
 
-      {/* PROFILE EDIT MODAL */}
       {profileEditData && (
         <div className="fixed inset-0 bg-[#4A2511]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={(e) => {
